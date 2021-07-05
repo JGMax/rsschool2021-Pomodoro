@@ -1,0 +1,2 @@
+rootProject.name = "rsschool2021-Pomodoro"
+include ':app'

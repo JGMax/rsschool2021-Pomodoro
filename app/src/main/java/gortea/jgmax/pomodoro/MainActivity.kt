@@ -1,4 +1,4 @@
-package gortea.jgmax.rsschool2021
+package gortea.jgmax.pomodoro
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle

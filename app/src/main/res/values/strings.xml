@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">rsschool2021-Pomodoro</string>
+    <string name="app_name">Pomodoro</string>
+    <string name="add_button_desc">Add button</string>
 </resources>

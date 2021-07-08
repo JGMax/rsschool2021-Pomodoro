@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <declare-styleable name="CustomView">
-        <attr name="color" format="color" />
-        <attr name="view_style" format="enum">
+        <attr name="draw_color" format="color" />
+        <attr name="draw_style" format="enum">
             <enum name="fill" value="0" />
             <enum name="stroke" value="1" />
         </attr>
@@ -10,6 +10,10 @@
     </declare-styleable>
 
     <declare-styleable name="ProgressPie" parent="CustomView">
+        <attr name="draw_color" />
+        <attr name="draw_style" />
+        <attr name="stroke_width" />
+
         <attr name="reversed" format="boolean" />
         <attr name="min_progress" format="integer" />
         <attr name="max_progress" format="integer" />
@@ -17,6 +21,10 @@
     </declare-styleable>
 
     <declare-styleable name="SimpleCircle" parent="CustomView">
+        <attr name="draw_color" />
+        <attr name="draw_style" />
+        <attr name="stroke_width" />
+
         <attr name="radius" format="float" />
     </declare-styleable>
 </resources>

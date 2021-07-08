@@ -1,6 +1,82 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content">
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginVertical="4dp"
+    android:layout_marginHorizontal="@dimen/horizontal_margin"
+    app:cardCornerRadius="4dp"
+    app:cardElevation="4dp">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:id="@+id/timer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/horizontal_margin"
+            android:textAllCaps="false"
+            android:textSize="36sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="00:00:00" />
+
+        <gortea.jgmax.pomodoro.views.ProgressPie
+            android:id="@+id/progress_pie"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginEnd="16dp"
+            app:layout_constraintBaseline_toBaselineOf="@id/timer"
+            app:layout_constraintEnd_toStartOf="@id/timer"
+            tools:progress="80" />
+
+        <gortea.jgmax.pomodoro.views.SimpleCircle
+            android:id="@+id/indicator"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:layout_margin="@dimen/horizontal_margin"
+            app:draw_color="#00000000"
+            tools:draw_color="?attr/draw_color"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <Button
+            android:id="@+id/run_pause_btn"
+            style="@style/TimerControlsStyle"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginVertical="@dimen/vertical_margin"
+            android:layout_marginEnd="@dimen/horizontal_margin"
+            app:icon="@drawable/ic_play"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/timer" />
+
+        <Button
+            android:id="@+id/reset_btn"
+            style="@style/TimerControlsStyle"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginVertical="@dimen/vertical_margin"
+            android:layout_marginEnd="@dimen/horizontal_margin"
+            app:icon="@drawable/ic_reset"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/run_pause_btn" />
+
+        <Button
+            android:id="@+id/delete_btn"
+            style="@style/TimerControlsStyle"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginVertical="@dimen/vertical_margin"
+            android:layout_marginStart="@dimen/horizontal_margin"
+            app:icon="@drawable/ic_delete"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>

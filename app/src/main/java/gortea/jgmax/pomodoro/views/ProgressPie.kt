@@ -2,10 +2,7 @@ package gortea.jgmax.pomodoro.views
 
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
 import android.util.AttributeSet
-import android.view.View
 import androidx.annotation.AttrRes
 import gortea.jgmax.pomodoro.R
 
@@ -13,7 +10,7 @@ class ProgressPie @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     @AttrRes defStyleAttr: Int = 0
-) : View(context, attrs, defStyleAttr) {
+) : CustomView(context, attrs, defStyleAttr) {
 
     private var max = 100
     private var min = 0
@@ -21,12 +18,7 @@ class ProgressPie @JvmOverloads constructor(
 
     private var reversed = false
 
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-
     init {
-        var color = Color.RED
-        var strokeWidth = 1f
-        var style = Style.FILL.value
         if (attrs != null) {
             val styledAttrs = context.theme.obtainStyledAttributes(
                 attrs,
@@ -34,9 +26,6 @@ class ProgressPie @JvmOverloads constructor(
                 defStyleAttr,
                 0
             )
-            color = styledAttrs.getColor(R.styleable.CustomView_color, color)
-            style = styledAttrs.getInt(R.styleable.CustomView_view_style, style)
-            strokeWidth = styledAttrs.getFloat(R.styleable.CustomView_stroke_width, strokeWidth)
 
             max = styledAttrs.getInt(R.styleable.ProgressPie_max_progress, max)
             min = styledAttrs.getInt(R.styleable.ProgressPie_min_progress, min)
@@ -44,10 +33,6 @@ class ProgressPie @JvmOverloads constructor(
             reversed = styledAttrs.getBoolean(R.styleable.ProgressPie_reversed, reversed)
             styledAttrs.recycle()
         }
-
-        paint.color = color
-        paint.style = if (style == Style.STROKE.value) Paint.Style.STROKE else Paint.Style.FILL
-        paint.strokeWidth = strokeWidth
     }
 
 
@@ -89,21 +74,6 @@ class ProgressPie @JvmOverloads constructor(
         invalidate()
     }
 
-    fun setColor(color: Int) {
-        paint.color = color
-        invalidate()
-    }
-
-    fun setStyle(style: Style) {
-        paint.style = if (style == Style.STROKE) Paint.Style.STROKE else Paint.Style.FILL
-        invalidate()
-    }
-
-    fun setStrokeWidth(width: Float) {
-        paint.strokeWidth = width
-        invalidate()
-    }
-
     fun setReversed(reversed: Boolean) {
         this.reversed = reversed
         invalidate()
@@ -111,10 +81,5 @@ class ProgressPie @JvmOverloads constructor(
 
     override fun getBaseline(): Int {
         return layoutParams.height
-    }
-
-    enum class Style(val value: Int) {
-        FILL(0),
-        STROKE(1);
     }
 }

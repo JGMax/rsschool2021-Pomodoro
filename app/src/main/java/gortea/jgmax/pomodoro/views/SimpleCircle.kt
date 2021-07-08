@@ -9,84 +9,48 @@ import android.view.View
 import androidx.annotation.AttrRes
 import gortea.jgmax.pomodoro.R
 
-class ProgressPie @JvmOverloads constructor(
+class SimpleCircle @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     @AttrRes defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
-    private var max = 100
-    private var min = 0
-    private var progress = 0
-
-    private var reversed = false
-
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private var radius = -1f
 
     init {
         var color = Color.RED
-        var strokeWidth = 1f
+        var strokeWidth = 4f
         var style = Style.FILL.value
         if (attrs != null) {
             val styledAttrs = context.theme.obtainStyledAttributes(
                 attrs,
-                R.styleable.ProgressPie,
+                R.styleable.SimpleCircle,
                 defStyleAttr,
                 0
             )
             color = styledAttrs.getColor(R.styleable.CustomView_color, color)
-            style = styledAttrs.getInt(R.styleable.CustomView_view_style, style)
             strokeWidth = styledAttrs.getFloat(R.styleable.CustomView_stroke_width, strokeWidth)
+            style = styledAttrs.getInt(R.styleable.CustomView_view_style, style)
 
-            max = styledAttrs.getInt(R.styleable.ProgressPie_max_progress, max)
-            min = styledAttrs.getInt(R.styleable.ProgressPie_min_progress, min)
-            progress = styledAttrs.getInt(R.styleable.ProgressPie_progress, min)
-            reversed = styledAttrs.getBoolean(R.styleable.ProgressPie_reversed, reversed)
-            styledAttrs.recycle()
+            radius = styledAttrs.getFloat(R.styleable.SimpleCircle_radius, radius)
         }
 
+        paint.strokeWidth = strokeWidth
         paint.color = color
         paint.style = if (style == Style.STROKE.value) Paint.Style.STROKE else Paint.Style.FILL
-        paint.strokeWidth = strokeWidth
     }
-
 
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
-        if (max == min || progress >= max || progress < min) return
-
-        val step = 360 / (max - min).toFloat()
-        val p = if (reversed) progress - max else progress
-
-        val angle = p * step
-
         canvas?.apply {
-            drawArc(
-                0f,
-                0f,
-                width.toFloat(),
-                height.toFloat(),
-                -90f,
-                angle,
-                true,
+            drawCircle(
+                width.toFloat() / 2,
+                height.toFloat() / 2,
+                if (radius < 0) height.coerceAtMost(width).toFloat() / 2 else radius,
                 paint
             )
         }
-    }
-
-    fun setProgress(progress: Int) {
-        this.progress = progress
-        invalidate()
-    }
-
-    fun setMax(max: Int) {
-        this.max = max
-        invalidate()
-    }
-
-    fun setMin(min: Int) {
-        this.min = min
-        invalidate()
     }
 
     fun setColor(color: Int) {
@@ -104,13 +68,13 @@ class ProgressPie @JvmOverloads constructor(
         invalidate()
     }
 
-    fun setReversed(reversed: Boolean) {
-        this.reversed = reversed
+    fun setRadius(radius: Float) {
+        this.radius = radius
         invalidate()
     }
 
     override fun getBaseline(): Int {
-        return layoutParams.height
+        return layoutParams.height / 2
     }
 
     enum class Style(val value: Int) {

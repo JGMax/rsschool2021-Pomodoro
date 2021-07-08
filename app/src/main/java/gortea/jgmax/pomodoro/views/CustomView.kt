@@ -22,7 +22,7 @@ open class CustomView @JvmOverloads constructor(
         if (attrs != null) {
             val styledAttrs = context.theme.obtainStyledAttributes(
                 attrs,
-                R.styleable.ProgressPie,
+                R.styleable.CustomView,
                 defStyleAttr,
                 0
             )

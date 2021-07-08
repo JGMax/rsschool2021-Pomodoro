@@ -19,12 +19,4 @@
         <attr name="max_progress" format="integer" />
         <attr name="progress" format="integer" />
     </declare-styleable>
-
-    <declare-styleable name="SimpleCircle" parent="CustomView">
-        <attr name="draw_color" />
-        <attr name="draw_style" />
-        <attr name="stroke_width" />
-
-        <attr name="radius" format="float" />
-    </declare-styleable>
 </resources>

@@ -1,4 +1,9 @@
 <resources>
     <string name="app_name">Pomodoro</string>
     <string name="add_button_desc">Add button</string>
+    <string name="indicator_desc">blinking activation indicator</string>
+    <string name="play_pause_button_desc">play pause button</string>
+    <string name="reset_button_desc">reset timer button</string>
+    <string name="delete_button_desc">delete button</string>
+    <string name="timer_desc">timer</string>
 </resources>

@@ -1,10 +1,11 @@
-package gortea.jgmax.pomodoro.view
+package gortea.jgmax.pomodoro.views
 
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
+import android.util.Log
 import android.view.View
 import androidx.annotation.AttrRes
 import gortea.jgmax.pomodoro.R
@@ -106,6 +107,10 @@ class ProgressPie @JvmOverloads constructor(
     fun setReversed(reversed: Boolean) {
         this.reversed = reversed
         invalidate()
+    }
+
+    override fun getBaseline(): Int {
+        return layoutParams.height
     }
 
     enum class Style(val value: Int) {

@@ -13,6 +13,7 @@ import androidx.vectordrawable.graphics.drawable.AnimatedVectorDrawableCompat
 import com.google.android.material.button.MaterialButton
 import gortea.jgmax.pomodoro.R
 import gortea.jgmax.pomodoro.databinding.TimerItemBinding
+import gortea.jgmax.pomodoro.extentions.displayTime
 import gortea.jgmax.pomodoro.models.TimerModel
 import gortea.jgmax.pomodoro.timer.Timer
 import gortea.jgmax.pomodoro.views.ProgressPie
@@ -39,7 +40,7 @@ class TimerListAdapter(
         RecyclerView.ViewHolder(binding.root) {
         fun bind(item: TimerModel, position: Int) {
             with(binding) {
-                timer.text = formattedStringFrom(item.currentTime)
+                timer.text = item.currentTime.displayTime()
 
                 startStopBtn.setOnClickListener {
                     onStartStopClick(item, object : Timer.TimeChangeListener {
@@ -51,7 +52,7 @@ class TimerListAdapter(
 
                         override fun onTimeChange(currentTime: Long, progress: Int) {
                             progressPie.setProgress(progress)
-                            timer.text = formattedStringFrom(currentTime)
+                            timer.text = currentTime.displayTime()
                         }
 
                         override fun onStop(isEnded: Boolean) {
@@ -124,7 +125,7 @@ class TimerListAdapter(
 
             item.currentTime = item.startTime
             if (!item.isActive) {
-                timer.text = formattedStringFrom(item.currentTime)
+                timer.text = item.currentTime.displayTime()
                 pie.setProgress(item.progress)
             }
         }
@@ -159,22 +160,6 @@ class TimerListAdapter(
             notifyItemInserted(timers.lastIndex)
             notifyItemRangeChanged(timers.lastIndex, itemCount)
             return true
-        }
-
-        private fun formattedStringFrom(time: Long): String {
-            fun format(n: Long) = if (n < 10) {
-                "0$n"
-            } else {
-                "$n"
-            }
-
-            val hoursPart = time / 3600
-            val hours: String = format(hoursPart)
-            val minutesPart = (time % 3600) / 60
-            val minutes: String = format(minutesPart)
-            val secondsPart = time % 60
-            val seconds = format(secondsPart)
-            return "$hours:$minutes:$seconds"
         }
     }
 }

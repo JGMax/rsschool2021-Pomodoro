@@ -8,4 +8,5 @@
     <string name="timer_desc">timer</string>
     <string name="start_btn">start</string>
     <string name="stop_btn">stop</string>
+    <string name="restart_btn">restart</string>
 </resources>

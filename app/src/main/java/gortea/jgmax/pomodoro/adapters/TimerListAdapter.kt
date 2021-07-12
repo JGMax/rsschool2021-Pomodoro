@@ -5,9 +5,11 @@ import android.graphics.drawable.AnimationDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.view.isVisible
+import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.RecyclerView
 import androidx.vectordrawable.graphics.drawable.AnimatedVectorDrawableCompat
 import com.google.android.material.button.MaterialButton
@@ -40,7 +42,7 @@ class TimerListAdapter(
         RecyclerView.ViewHolder(binding.root) {
         fun bind(item: TimerModel, position: Int) {
             with(binding) {
-                timer.text = item.currentTime.displayTime()
+                timerTv.text = item.currentTime.displayTime()
 
                 startStopBtn.setOnClickListener {
                     onStartStopClick(item, object : Timer.TimeChangeListener {
@@ -48,22 +50,37 @@ class TimerListAdapter(
                             item.isActive = true
                             setBlinking(true, indicator)
                             startStopBtn.text = context.getString(R.string.stop_btn)
+                            progressPie.setProgress(item.progress)
+                            timerTv.text = item.currentTime.displayTime()
                         }
 
-                        override fun onTimeChange(currentTime: Long, progress: Int) {
+                        override fun onTimeChanged(currentTime: Long, progress: Int) {
                             progressPie.setProgress(progress)
-                            timer.text = currentTime.displayTime()
+                            timerTv.text = currentTime.displayTime()
                         }
 
                         override fun onStop(isEnded: Boolean) {
                             item.isActive = false
                             setBlinking(false, indicator)
-                            startStopBtn.text = context.getString(R.string.start_btn)
+                            timer = null
+                            startStopBtn.text = if (isEnded) {
+                                context.getString(R.string.restart_btn)
+                            } else {
+                                context.getString(R.string.start_btn)
+                            }
                         }
                     })
                 }
 
-                resetBtn.setOnClickListener { onResetClick(it, item, timer, progressPie) }
+                resetBtn.setOnClickListener {
+                    onResetClick(
+                        it,
+                        item,
+                        timerTv,
+                        progressPie,
+                        startStopBtn
+                    )
+                }
                 deleteBtn.setOnClickListener { onDeleteClick(item, position) }
 
                 progressPie.setProgress(item.progress)
@@ -97,19 +114,23 @@ class TimerListAdapter(
         }
 
         private fun onStartStopClick(item: TimerModel, listener: Timer.TimeChangeListener) {
-            fun startTimer() {
-                timer?.stop()
-                timer = Timer(item)
-                timer?.apply {
-                    this.listener = listener
-                    start()
-                }
+            if (item.currentTime == 0L && !item.isActive) {
+                item.currentTime = item.startTime
             }
 
             if (timer?.model != item) {
-                startTimer()
+                startTimer(item, listener)
             } else {
                 stopTimer()
+            }
+        }
+
+        private fun startTimer(item: TimerModel, listener: Timer.TimeChangeListener?) {
+            stopTimer()
+            timer = Timer(item, context as? LifecycleOwner)
+            timer?.apply {
+                this.listener = listener
+                start()
             }
         }
 
@@ -118,15 +139,27 @@ class TimerListAdapter(
             timer = null
         }
 
-        private fun onResetClick(view: View, item: TimerModel, timer: TextView, pie: ProgressPie) {
+        private fun onResetClick(
+            view: View,
+            item: TimerModel,
+            timerTv: TextView,
+            pie: ProgressPie,
+            startBtn: Button
+        ) {
             val vectorIcon = AnimatedVectorDrawableCompat.create(context, R.drawable.animated_reset)
             (view as? MaterialButton)?.icon = vectorIcon
             vectorIcon?.start()
 
-            item.currentTime = item.startTime
-            if (!item.isActive) {
-                timer.text = item.currentTime.displayTime()
-                pie.setProgress(item.progress)
+            item.apply {
+                currentTime = startTime
+                if (isActive) {
+                    val listener = timer?.listener
+                    startTimer(item, listener)
+                } else {
+                    timerTv.text = currentTime.displayTime()
+                    startBtn.text = context.getString(R.string.start_btn)
+                    pie.setProgress(progress)
+                }
             }
         }
 

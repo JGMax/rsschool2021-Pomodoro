@@ -15,7 +15,7 @@
         android:layout_height="match_parent">
 
         <TextView
-            android:id="@+id/timer"
+            android:id="@+id/timer_tv"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="@dimen/horizontal_margin"
@@ -31,8 +31,8 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:layout_marginEnd="16dp"
-            app:layout_constraintBaseline_toBaselineOf="@id/timer"
-            app:layout_constraintEnd_toStartOf="@id/timer"
+            app:layout_constraintBaseline_toBaselineOf="@id/timer_tv"
+            app:layout_constraintEnd_toStartOf="@id/timer_tv"
             app:reversed="true"
             tools:progress="10" />
 
@@ -58,7 +58,7 @@
             android:text="@string/start_btn"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/timer" />
+            app:layout_constraintTop_toBottomOf="@id/timer_tv" />
 
         <Button
             android:id="@+id/reset_btn"

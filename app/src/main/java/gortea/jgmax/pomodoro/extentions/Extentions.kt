@@ -1,6 +1,9 @@
 package gortea.jgmax.pomodoro.extentions
 
 fun Long.displayTime(): String {
+    if (this < 0L) {
+        return "00:00:00"
+    }
     fun format(n: Long) = if (n < 10) {
         "0$n"
     } else {

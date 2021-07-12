@@ -1,10 +1,12 @@
 package gortea.jgmax.pomodoro.views
 
+import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
 import android.util.AttributeSet
 import androidx.annotation.AttrRes
 import gortea.jgmax.pomodoro.R
+import kotlin.math.abs
 
 class ProgressPie @JvmOverloads constructor(
     context: Context,
@@ -17,6 +19,8 @@ class ProgressPie @JvmOverloads constructor(
     private var progress = 0
 
     private var reversed = false
+
+    private var animator: ValueAnimator? = null
 
     init {
         if (attrs != null) {
@@ -59,9 +63,20 @@ class ProgressPie @JvmOverloads constructor(
         }
     }
 
-    fun setProgress(progress: Int) {
-        this.progress = progress
-        invalidate()
+    fun setProgress(progress: Int, withAnimation: Boolean = true) {
+        animator?.cancel()
+        if (withAnimation) {
+            animator = ValueAnimator.ofInt(this.progress, progress)
+            animator?.duration = abs(this.progress - progress).toLong() * 2
+            animator?.addUpdateListener {
+                this.progress = it.animatedValue as Int
+                invalidate()
+            }
+            animator?.start()
+        } else {
+            this.progress = progress
+            invalidate()
+        }
     }
 
     fun setMax(max: Int) {

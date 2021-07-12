@@ -164,12 +164,12 @@ class TimerListAdapter(
         }
 
         private fun onDeleteClick(item: TimerModel, position: Int) {
-            if (timer?.model == item) {
-                stopTimer()
-            }
             timers.removeAt(position)
             notifyItemRemoved(position)
             notifyItemRangeChanged(position, itemCount)
+            if (timer?.model == item) {
+                stopTimer()
+            }
         }
 
         private fun add(item: TimerModel): Boolean {

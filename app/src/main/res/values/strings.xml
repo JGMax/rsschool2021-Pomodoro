@@ -6,4 +6,6 @@
     <string name="reset_button_desc">reset timer button</string>
     <string name="delete_button_desc">delete button</string>
     <string name="timer_desc">timer</string>
+    <string name="start_btn">start</string>
+    <string name="stop_btn">stop</string>
 </resources>

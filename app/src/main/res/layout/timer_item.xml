@@ -33,7 +33,8 @@
             android:layout_marginEnd="16dp"
             app:layout_constraintBaseline_toBaselineOf="@id/timer"
             app:layout_constraintEnd_toStartOf="@id/timer"
-            tools:progress="80" />
+            app:reversed="true"
+            tools:progress="10" />
 
         <ImageView
             android:id="@+id/indicator"
@@ -48,14 +49,14 @@
             android:contentDescription="@string/indicator_desc" />
 
         <Button
-            android:id="@+id/run_pause_btn"
+            android:id="@+id/start_stop_btn"
             style="@style/TimerControlsStyle"
-            android:layout_width="36dp"
+            android:layout_width="wrap_content"
             android:layout_height="36dp"
             android:layout_marginVertical="@dimen/vertical_margin"
             android:layout_marginEnd="@dimen/horizontal_margin"
             android:contentDescription="@string/play_pause_button_desc"
-            app:icon="@drawable/ic_play"
+            android:text="@string/start_btn"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/timer" />
@@ -70,7 +71,7 @@
             android:contentDescription="@string/reset_button_desc"
             app:icon="@drawable/ic_reset"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/run_pause_btn" />
+            app:layout_constraintEnd_toStartOf="@+id/start_stop_btn" />
 
         <Button
             android:id="@+id/delete_btn"

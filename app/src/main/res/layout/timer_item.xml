@@ -41,9 +41,8 @@
             android:layout_width="12dp"
             android:layout_height="12dp"
             android:layout_margin="@dimen/horizontal_margin"
-            android:src="@drawable/circle"
-            app:tint="@color/transparent"
-            tools:tint="?attr/draw_color"
+            android:background="@drawable/blinking_circle"
+            app:tint="?attr/draw_color"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             android:contentDescription="@string/indicator_desc" />

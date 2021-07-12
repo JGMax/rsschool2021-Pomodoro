@@ -8,7 +8,7 @@ object DummyContent {
     fun build(count: Int) {
         ITEMS.clear()
         repeat(count) {
-            ITEMS.add(TimerModel(it % Int.MAX_VALUE, 8125, 8125, false))
+            ITEMS.add(TimerModel(5, id = it))
         }
     }
 }

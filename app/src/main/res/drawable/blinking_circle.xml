@@ -3,8 +3,8 @@
     android:oneshot="false">
     <item
         android:drawable="@drawable/circle"
-        android:duration="700" />
+        android:duration="1000" />
     <item
         android:drawable="@color/transparent"
-        android:duration="700" />
+        android:duration="1000" />
 </animation-list>

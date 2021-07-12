@@ -5,7 +5,7 @@
     android:viewportHeight="24">
     <group
         android:name="reset_circle"
-        android:pivotX="12"
+        android:pivotX="13"
         android:pivotY="12">
         <path
             android:fillColor="#000000"

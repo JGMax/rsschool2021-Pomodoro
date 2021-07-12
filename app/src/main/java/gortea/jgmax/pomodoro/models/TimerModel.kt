@@ -1,3 +1,8 @@
 package gortea.jgmax.pomodoro.models
 
-data class TimerModel(val startTime: Int, var currentTime: Int, var isActive: Boolean)
+data class TimerModel(
+    val id: Int,
+    val startTime: Long,
+    var currentTime: Long = startTime,
+    var isActive: Boolean = false
+)

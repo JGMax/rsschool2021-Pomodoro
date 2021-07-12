@@ -68,7 +68,7 @@
             android:layout_marginVertical="@dimen/vertical_margin"
             android:layout_marginEnd="@dimen/horizontal_margin"
             android:contentDescription="@string/reset_button_desc"
-            app:icon="@drawable/ic_reset"
+            app:icon="@drawable/animated_reset"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/start_stop_btn" />
 

@@ -1,9 +1,12 @@
 package gortea.jgmax.pomodoro
 
+import android.content.BroadcastReceiver
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
+import android.content.IntentFilter
 import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.*
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import gortea.jgmax.pomodoro.adapters.TimerListAdapter
 import gortea.jgmax.pomodoro.constants.*
@@ -11,12 +14,23 @@ import gortea.jgmax.pomodoro.databinding.ActivityMainBinding
 import gortea.jgmax.pomodoro.dummy.DummyContent
 import gortea.jgmax.pomodoro.models.TimerModel
 import gortea.jgmax.pomodoro.preferences.AppPreferences
+import gortea.jgmax.pomodoro.receivers.Receiver
 import gortea.jgmax.pomodoro.services.TimerService
 
 class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner {
 
     private val binding: ActivityMainBinding by lazy {
         ActivityMainBinding.inflate(layoutInflater)
+    }
+
+    private val receiver = Receiver { _, data ->
+        val currentId = data?.extras?.getInt(CURRENT_ID_KEY) ?: return@Receiver
+        val currentTime = data.extras?.getLong(CURRENT_TIME_KEY) ?: return@Receiver
+
+        val adapter = binding.timerList.adapter as? TimerListAdapter ?: return@Receiver
+        if (adapter.getCurrentTime() ?: 0L > currentTime) {
+            adapter.updateTime(currentId, currentTime)
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,20 +49,34 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner {
         }
     }
 
-    private fun restoreTimersList() : List<TimerModel>? {
+    private fun restoreTimersList(): List<TimerModel>? {
         val appPreferences = AppPreferences(this)
         return appPreferences.getList(TIMERS_LIST_KEY)
     }
 
-    private fun saveTimers(adapter: TimerListAdapter) {
+    private fun saveTimersList(adapter: TimerListAdapter) {
         val appPreferences = AppPreferences(this)
         appPreferences.putList(TIMERS_LIST_KEY, adapter.timers)
+    }
+
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
+    private fun registerLocalReceiver() {
+        LocalBroadcastManager
+            .getInstance(this)
+            .registerReceiver(receiver, IntentFilter(RESULT_INTENT_FILTER))
+    }
+
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+    private fun unregisterLocalReceiver() {
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(receiver)
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
     private fun onBackgroundActivity() {
         val adapter = binding.timerList.adapter as? TimerListAdapter ?: return
-        saveTimers(adapter)
+        saveTimersList(adapter)
 
         val id = adapter.getCurrentId() ?: return
         val time = adapter.getCurrentTime() ?: return
@@ -67,19 +95,6 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner {
         val resultIntent = createPendingResult(PENDING_REQUEST_CODE, Intent(), 0)
         intent.putExtra(RESULTS_INTENT_KEY, resultIntent)
         startService(intent)
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == PENDING_REQUEST_CODE && resultCode == STATUS_CANCELLED) {
-            val currentId = data?.extras?.getInt(CURRENT_ID_KEY) ?: return
-            val currentTime = data.extras?.getLong(CURRENT_TIME_KEY) ?: return
-
-            val adapter = binding.timerList.adapter as? TimerListAdapter ?: return
-            if (adapter.getCurrentTime() ?: 0L > currentTime) {
-                adapter.updateTime(currentId, currentTime)
-            }
-        }
     }
 
     private companion object {

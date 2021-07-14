@@ -8,8 +8,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
-import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import gortea.jgmax.pomodoro.MainActivity
 import gortea.jgmax.pomodoro.R
 import gortea.jgmax.pomodoro.constants.*
@@ -18,7 +18,6 @@ import gortea.jgmax.pomodoro.timer.Timer
 import kotlinx.coroutines.GlobalScope
 
 class TimerService : Service() {
-
     private companion object {
         private const val CHANNEL_ID = "Pomodoro notification"
         private const val NOTIFICATION_ID = 777
@@ -40,8 +39,6 @@ class TimerService : Service() {
     private var timer: Timer? = null
     private var currentId: Int? = null
     private var currentTime: Long? = null
-
-    private var resultsIntent: PendingIntent? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -71,13 +68,7 @@ class TimerService : Service() {
                 currentId = intent.extras?.getInt(CURRENT_ID_KEY) ?: return
                 start(requireNotNull(currentTime))
             }
-            COMMAND_STOP ->  {
-                val resultsExtra: PendingIntent? = intent?.extras?.getParcelable(RESULTS_INTENT_KEY)
-                if (resultsExtra != null) {
-                    resultsIntent = resultsExtra
-                }
-                stop()
-            }
+            COMMAND_STOP -> stop()
             INVALID -> return
         }
     }
@@ -169,13 +160,17 @@ class TimerService : Service() {
 
     private fun getNotification(content: String) = builder.setContentText(content).build()
 
-    override fun onDestroy() {
-        val dataIntent = Intent()
+    private fun sendLocalBroadcast() {
+        val dataIntent = Intent(RESULT_INTENT_FILTER)
         dataIntent.apply {
             putExtra(CURRENT_ID_KEY, currentId)
             putExtra(CURRENT_TIME_KEY, currentTime)
         }
-        resultsIntent?.send(this, STATUS_CANCELLED, dataIntent)
+        LocalBroadcastManager.getInstance(this).sendBroadcast(dataIntent)
+    }
+
+    override fun onDestroy() {
+        sendLocalBroadcast()
         super.onDestroy()
     }
 }

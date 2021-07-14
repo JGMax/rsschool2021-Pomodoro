@@ -3,7 +3,6 @@ package gortea.jgmax.pomodoro
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import androidx.lifecycle.*
 import androidx.recyclerview.widget.LinearLayoutManager
 import gortea.jgmax.pomodoro.adapters.TimerListAdapter
@@ -44,7 +43,6 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner {
     private fun saveTimers(adapter: TimerListAdapter) {
         val appPreferences = AppPreferences(this)
         appPreferences.putList(TIMERS_LIST_KEY, adapter.timers)
-        Log.e("timers", "saved")
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)

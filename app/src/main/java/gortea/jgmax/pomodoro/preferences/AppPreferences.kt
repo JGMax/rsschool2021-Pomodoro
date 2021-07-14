@@ -2,7 +2,6 @@ package gortea.jgmax.pomodoro.preferences
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
@@ -12,7 +11,6 @@ class AppPreferences(context: Context) {
     fun <T> putList(key: String, data: List<T>) {
         val gson = Gson()
         val jsonStr = gson.toJson(data)
-        Log.e("jsonList", jsonStr)
         set(key, jsonStr)
     }
 

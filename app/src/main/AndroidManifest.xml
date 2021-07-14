@@ -10,6 +10,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Pomodoro">
         <activity android:name="gortea.jgmax.pomodoro.MainActivity"
+            android:launchMode="singleTop"
             android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

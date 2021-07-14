@@ -10,6 +10,8 @@ import gortea.jgmax.pomodoro.adapters.TimerListAdapter
 import gortea.jgmax.pomodoro.constants.*
 import gortea.jgmax.pomodoro.databinding.ActivityMainBinding
 import gortea.jgmax.pomodoro.dummy.DummyContent
+import gortea.jgmax.pomodoro.models.TimerModel
+import gortea.jgmax.pomodoro.preferences.AppPreferences
 import gortea.jgmax.pomodoro.services.TimerService
 
 class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner {
@@ -20,7 +22,7 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+        lifecycle.addObserver(this)
         setContentView(binding.root)
         setupRecyclerView()
     }
@@ -29,13 +31,27 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner {
         DummyContent.build(10)
         binding.timerList.apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
-            adapter = TimerListAdapter(DummyContent.ITEMS, this@MainActivity)
+            val data = restoreTimersList() ?: DummyContent.ITEMS
+            adapter = TimerListAdapter(data, this@MainActivity)
         }
     }
 
+    private fun restoreTimersList() : List<TimerModel>? {
+        val appPreferences = AppPreferences(this)
+        return appPreferences.getList(TIMERS_LIST_KEY)
+    }
+
+    private fun saveTimers(adapter: TimerListAdapter) {
+        val appPreferences = AppPreferences(this)
+        appPreferences.putList(TIMERS_LIST_KEY, adapter.timers)
+        Log.e("timers", "saved")
+    }
+
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
-    private fun onAppInBackground() {
+    private fun onBackgroundActivity() {
         val adapter = binding.timerList.adapter as? TimerListAdapter ?: return
+        saveTimers(adapter)
+
         val id = adapter.getCurrentId() ?: return
         val time = adapter.getCurrentTime() ?: return
 
@@ -43,27 +59,33 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner {
         intent.putExtra(COMMAND_ID, COMMAND_START)
         intent.putExtra(CURRENT_TIME_KEY, time)
         intent.putExtra(CURRENT_ID_KEY, id)
-        val resultIntent = createPendingResult(PENDING_REQUEST_CODE, Intent(), 0)
-        intent.putExtra(RESULTS_INTENT_KEY, resultIntent)
         startService(intent)
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
-    private fun onAppInForeground() {
+    fun onForegroundActivity() {
         val intent = Intent(this, TimerService::class.java)
         intent.putExtra(COMMAND_ID, COMMAND_STOP)
+        val resultIntent = createPendingResult(PENDING_REQUEST_CODE, Intent(), 0)
+        intent.putExtra(RESULTS_INTENT_KEY, resultIntent)
         startService(intent)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == PENDING_REQUEST_CODE && resultCode == STATUS_CANCELLED) {
-            val currentId = data?.extras?.getInt(CURRENT_ID_KEY)
-            Log.e("current id", currentId.toString())
+            val currentId = data?.extras?.getInt(CURRENT_ID_KEY) ?: return
+            val currentTime = data.extras?.getLong(CURRENT_TIME_KEY) ?: return
+
+            val adapter = binding.timerList.adapter as? TimerListAdapter ?: return
+            if (adapter.getCurrentTime() ?: 0L > currentTime) {
+                adapter.updateTime(currentId, currentTime)
+            }
         }
     }
 
     private companion object {
         private const val PENDING_REQUEST_CODE = 2222
+        private const val TIMERS_LIST_KEY = "TIMERS_LIST"
     }
 }

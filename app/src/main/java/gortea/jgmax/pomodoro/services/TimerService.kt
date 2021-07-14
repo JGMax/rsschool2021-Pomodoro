@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import gortea.jgmax.pomodoro.MainActivity
 import gortea.jgmax.pomodoro.R
@@ -59,7 +60,7 @@ class TimerService : Service() {
 
     private fun getPendingIntent(): PendingIntent {
         val intent = Intent(this, MainActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
         return PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_ONE_SHOT)
     }
 
@@ -68,12 +69,15 @@ class TimerService : Service() {
             COMMAND_START -> {
                 currentTime = intent?.extras?.getLong(CURRENT_TIME_KEY) ?: return
                 currentId = intent.extras?.getInt(CURRENT_ID_KEY) ?: return
-                if (resultsIntent == null) {
-                    resultsIntent = intent.extras?.getParcelable(RESULTS_INTENT_KEY)
-                }
                 start(requireNotNull(currentTime))
             }
-            COMMAND_STOP -> stop()
+            COMMAND_STOP ->  {
+                val resultsExtra: PendingIntent? = intent?.extras?.getParcelable(RESULTS_INTENT_KEY)
+                if (resultsExtra != null) {
+                    resultsIntent = resultsExtra
+                }
+                stop()
+            }
             INVALID -> return
         }
     }
@@ -135,15 +139,31 @@ class TimerService : Service() {
 
     private fun getTimerListener() = object : Timer.TimeChangeListener {
         override fun onStart(currentTime: Long) {
-            notificationManager?.notify(NOTIFICATION_ID, getNotification(currentTime.displayTime()))
+            if (isServiceStarted) {
+                notificationManager?.notify(
+                    NOTIFICATION_ID,
+                    getNotification(currentTime.displayTime())
+                )
+            }
         }
 
         override fun onTimeChanged(currentTime: Long) {
-            notificationManager?.notify(NOTIFICATION_ID, getNotification(currentTime.displayTime()))
+            this@TimerService.currentTime = currentTime
+            if (isServiceStarted) {
+                notificationManager?.notify(
+                    NOTIFICATION_ID,
+                    getNotification(currentTime.displayTime())
+                )
+            }
         }
 
         override fun onStop(isEnded: Boolean) {
-            notificationManager?.notify(NOTIFICATION_ID, getNotification(getString(R.string.timer_ended_notification)))
+            if (isEnded) {
+                notificationManager?.notify(
+                    NOTIFICATION_ID,
+                    getNotification(getString(R.string.timer_ended_notification))
+                )
+            }
         }
     }
 
@@ -155,7 +175,6 @@ class TimerService : Service() {
             putExtra(CURRENT_ID_KEY, currentId)
             putExtra(CURRENT_TIME_KEY, currentTime)
         }
-
         resultsIntent?.send(this, STATUS_CANCELLED, dataIntent)
         super.onDestroy()
     }

@@ -13,6 +13,8 @@ open class Timer(
 ) {
     var listener: TimeChangeListener? = null
     private var isRunning = true
+    private var startTime = currentTime
+    private var startSystemTime = 0L
 
     fun start() {
         listener?.onStart(currentTime)
@@ -30,8 +32,7 @@ open class Timer(
     }
 
     private suspend fun run() {
-        val startSystemTime = System.currentTimeMillis()
-        val startTime = currentTime
+        setCurrentTime(currentTime)
         var currentTime = startTime
         while (currentTime > 0 && isRunning) {
             delay(INTERVAL / 2)
@@ -44,6 +45,11 @@ open class Timer(
                 }
             }
         }
+    }
+
+    fun setCurrentTime(currentTime: Long) {
+        startTime = currentTime
+        startSystemTime = System.currentTimeMillis()
     }
 
     @CallSuper

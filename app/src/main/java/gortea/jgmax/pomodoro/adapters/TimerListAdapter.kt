@@ -2,6 +2,7 @@ package gortea.jgmax.pomodoro.adapters
 
 import android.content.Context
 import android.graphics.drawable.AnimationDrawable
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -22,7 +23,7 @@ import gortea.jgmax.pomodoro.timer.Timer
 import gortea.jgmax.pomodoro.views.ProgressPie
 
 class TimerListAdapter(
-    private val timers: MutableList<TimerModel>,
+    val timers: List<TimerModel>,
     private val context: Context
 ) : RecyclerView.Adapter<TimerListAdapter.ViewHolder>() {
 
@@ -42,38 +43,69 @@ class TimerListAdapter(
     fun getCurrentTime(): Long? = timer?.model?.currentTime
     fun getCurrentId(): Int? = timer?.model?.id
 
+    fun updateTime(id: Int, time: Long) {
+        val model = timers.find { it.id == id } ?: return
+        model.currentTime = time
+        timer?.setCurrentTime(model.currentTime)
+    }
+
+    fun add(item: TimerModel): Boolean {
+        var id = -1
+        timers.forEachIndexed { i, model ->
+            if (i != timers.lastIndex) {
+                if (model.id + 1 != timers[i + 1].id) {
+                    id = model.id + 1
+                    return@forEachIndexed
+                }
+            }
+        }
+        if (id == -1) {
+            if (timers.size == Int.MAX_VALUE) {
+                return false
+            }
+            //timers.add(item.copy(id = timers.lastIndex))
+        } else {
+            //timers.add(item.copy(id = id))
+        }
+        notifyItemInserted(timers.lastIndex)
+        notifyItemRangeChanged(timers.lastIndex, itemCount)
+        return true
+    }
+
     inner class ViewHolder(private val binding: TimerItemBinding) :
         RecyclerView.ViewHolder(binding.root) {
         fun bind(item: TimerModel, position: Int) {
             with(binding) {
+                val timerListener = object : Timer.TimeChangeListener {
+                    override fun onStart(currentTime: Long) {
+                        item.isActive = true
+                        setBlinking(true, indicator, true)
+                        startStopBtn.text = context.getString(R.string.stop_btn)
+                        progressPie.setProgress(item.progress)
+                        timerTv.text = currentTime.displayTime()
+                    }
+
+                    override fun onTimeChanged(currentTime: Long) {
+                        progressPie.setProgress(item.progress)
+                        timerTv.text = currentTime.displayTime()
+                    }
+
+                    override fun onStop(isEnded: Boolean) {
+                        item.isActive = false
+                        setBlinking(false, indicator)
+                        timer = null
+                        startStopBtn.text = if (isEnded) {
+                            context.getString(R.string.restart_btn)
+                        } else {
+                            context.getString(R.string.start_btn)
+                        }
+                    }
+                }
+
                 timerTv.text = item.currentTime.displayTime()
 
                 startStopBtn.setOnClickListener {
-                    onStartStopClick(item, object : Timer.TimeChangeListener {
-                        override fun onStart(currentTime: Long) {
-                            item.isActive = true
-                            setBlinking(true, indicator)
-                            startStopBtn.text = context.getString(R.string.stop_btn)
-                            progressPie.setProgress(item.progress)
-                            timerTv.text = currentTime.displayTime()
-                        }
-
-                        override fun onTimeChanged(currentTime: Long) {
-                            progressPie.setProgress(item.progress)
-                            timerTv.text = currentTime.displayTime()
-                        }
-
-                        override fun onStop(isEnded: Boolean) {
-                            item.isActive = false
-                            setBlinking(false, indicator)
-                            timer = null
-                            startStopBtn.text = if (isEnded) {
-                                context.getString(R.string.restart_btn)
-                            } else {
-                                context.getString(R.string.start_btn)
-                            }
-                        }
-                    })
+                    onStartStopClick(item, timerListener)
                 }
 
                 resetBtn.setOnClickListener {
@@ -90,16 +122,24 @@ class TimerListAdapter(
                 progressPie.setProgress(item.progress)
                 setBlinking(item.isActive, indicator)
                 if (item.isActive) {
+                    if (timer == null) {
+                        startTimer(item, timerListener)
+                    }
                     startStopBtn.text = context.getString(R.string.stop_btn)
                 } else {
-                    startStopBtn.text = context.getString(R.string.start_btn)
+                    startStopBtn.text = if (item.currentTime == 0L) {
+                        context.getString(R.string.restart_btn)
+                    } else {
+                        context.getString(R.string.start_btn)
+                    }
                 }
             }
         }
 
-        private fun setBlinking(isActive: Boolean, indicator: ImageView) {
+        private fun setBlinking(isActive: Boolean, indicator: ImageView, force: Boolean = false) {
             fun startBlinking(view: ImageView) {
-                if (!view.isVisible) {
+                val ss = view.isVisible
+                if (!view.isVisible || force) {
                     view.isVisible = true
                     (view.background as? AnimationDrawable)?.start()
                 }
@@ -117,7 +157,7 @@ class TimerListAdapter(
             }
         }
 
-        private fun onStartStopClick(item: TimerModel, listener: Timer.TimeChangeListener) {
+        private fun onStartStopClick(item: TimerModel, listener: Timer.TimeChangeListener?) {
             if (item.currentTime == 0L && !item.isActive) {
                 item.currentTime = item.startTime
             }
@@ -157,8 +197,7 @@ class TimerListAdapter(
             item.apply {
                 currentTime = startTime
                 if (isActive) {
-                    val listener = timer?.listener
-                    startTimer(item, listener)
+                    timer?.setCurrentTime(currentTime)
                 } else {
                     timerTv.text = currentTime.displayTime()
                     startBtn.text = context.getString(R.string.start_btn)
@@ -168,35 +207,12 @@ class TimerListAdapter(
         }
 
         private fun onDeleteClick(item: TimerModel, position: Int) {
-            timers.removeAt(position)
+            //timers.removeAt(position)
             notifyItemRemoved(position)
             notifyItemRangeChanged(position, itemCount)
             if (timer?.model == item) {
                 stopTimer()
             }
-        }
-
-        private fun add(item: TimerModel): Boolean {
-            var id = -1
-            timers.forEachIndexed { i, model ->
-                if (i != timers.lastIndex) {
-                    if (model.id + 1 != timers[i + 1].id) {
-                        id = model.id + 1
-                        return@forEachIndexed
-                    }
-                }
-            }
-            if (id == -1) {
-                if (timers.size == Int.MAX_VALUE) {
-                    return false
-                }
-                timers.add(item.copy(id = timers.lastIndex))
-            } else {
-                timers.add(item.copy(id = id))
-            }
-            notifyItemInserted(timers.lastIndex)
-            notifyItemRangeChanged(timers.lastIndex, itemCount)
-            return true
         }
     }
 }

@@ -7,7 +7,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageView
-import android.widget.TextView
 import androidx.core.view.isVisible
 import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.RecyclerView
@@ -19,7 +18,6 @@ import gortea.jgmax.pomodoro.extentions.displayTime
 import gortea.jgmax.pomodoro.models.TimerModel
 import gortea.jgmax.pomodoro.timer.LifecycleTimer
 import gortea.jgmax.pomodoro.timer.Timer
-import gortea.jgmax.pomodoro.views.ProgressPie
 
 class TimerListAdapter(
     val timers: List<TimerModel>,

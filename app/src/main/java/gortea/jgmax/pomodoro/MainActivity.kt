@@ -1,6 +1,5 @@
 package gortea.jgmax.pomodoro
 
-import android.content.BroadcastReceiver
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
@@ -24,7 +23,8 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner {
     }
 
     private val receiver = Receiver { _, data ->
-        val currentId = data?.extras?.getInt(CURRENT_ID_KEY) ?: return@Receiver
+        if (data == null) return@Receiver
+        val currentId = data.extras?.getInt(CURRENT_ID_KEY) ?: return@Receiver
         val currentTime = data.extras?.getLong(CURRENT_TIME_KEY) ?: return@Receiver
 
         val adapter = binding.timerList.adapter as? TimerListAdapter ?: return@Receiver
@@ -92,13 +92,10 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner {
     fun onForegroundActivity() {
         val intent = Intent(this, TimerService::class.java)
         intent.putExtra(COMMAND_ID, COMMAND_STOP)
-        val resultIntent = createPendingResult(PENDING_REQUEST_CODE, Intent(), 0)
-        intent.putExtra(RESULTS_INTENT_KEY, resultIntent)
         startService(intent)
     }
 
     private companion object {
-        private const val PENDING_REQUEST_CODE = 2222
         private const val TIMERS_LIST_KEY = "TIMERS_LIST"
     }
 }

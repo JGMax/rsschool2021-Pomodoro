@@ -62,7 +62,7 @@ class TimerService : Service() {
     }
 
     private fun processIntent(intent: Intent?) {
-        when(intent?.extras?.getString(COMMAND_ID) ?: INVALID) {
+        when (intent?.extras?.getString(COMMAND_ID) ?: INVALID) {
             COMMAND_START -> {
                 currentTime = intent?.extras?.getLong(CURRENT_TIME_KEY) ?: return
                 currentId = intent.extras?.getInt(CURRENT_ID_KEY) ?: return
@@ -88,7 +88,7 @@ class TimerService : Service() {
     }
 
     private fun start(currentTime: Long) {
-        if(isServiceStarted) return
+        if (isServiceStarted) return
 
         try {
             moveToStartedState()

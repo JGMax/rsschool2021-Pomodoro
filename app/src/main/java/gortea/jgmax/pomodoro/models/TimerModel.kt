@@ -7,5 +7,5 @@ data class TimerModel(
     val id: Int = 0
 ) {
     val progress: Int
-    get() = (((startTime - currentTime) / startTime.toFloat()) * 100).toInt()
+        get() = (((startTime - currentTime) / startTime.toFloat()) * 100).toInt()
 }

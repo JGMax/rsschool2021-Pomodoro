@@ -6,7 +6,8 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
 class AppPreferences(context: Context) {
-    val preferences: SharedPreferences = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+    val preferences: SharedPreferences =
+        context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
 
     fun <T> putList(key: String, data: List<T>) {
         val gson = Gson()
@@ -14,7 +15,7 @@ class AppPreferences(context: Context) {
         set(key, jsonStr)
     }
 
-    inline fun <reified T> getList(key: String) : List<T>? {
+    inline fun <reified T> getList(key: String): List<T>? {
         val jsonStr = preferences.getString(key, null) ?: return null
         val gson = Gson()
         val type = object : TypeToken<List<T?>?>() {}.type

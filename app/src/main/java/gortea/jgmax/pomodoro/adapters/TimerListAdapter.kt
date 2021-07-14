@@ -17,6 +17,7 @@ import gortea.jgmax.pomodoro.R
 import gortea.jgmax.pomodoro.databinding.TimerItemBinding
 import gortea.jgmax.pomodoro.extentions.displayTime
 import gortea.jgmax.pomodoro.models.TimerModel
+import gortea.jgmax.pomodoro.timer.LifecycleTimer
 import gortea.jgmax.pomodoro.timer.Timer
 import gortea.jgmax.pomodoro.views.ProgressPie
 
@@ -25,7 +26,7 @@ class TimerListAdapter(
     private val context: Context
 ) : RecyclerView.Adapter<TimerListAdapter.ViewHolder>() {
 
-    private var timer: Timer? = null
+    private var timer: LifecycleTimer? = null
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = TimerItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -38,6 +39,9 @@ class TimerListAdapter(
 
     override fun getItemCount(): Int = timers.size
 
+    fun getCurrentTime(): Long? = timer?.model?.currentTime
+    fun getCurrentId(): Int? = timer?.model?.id
+
     inner class ViewHolder(private val binding: TimerItemBinding) :
         RecyclerView.ViewHolder(binding.root) {
         fun bind(item: TimerModel, position: Int) {
@@ -46,16 +50,16 @@ class TimerListAdapter(
 
                 startStopBtn.setOnClickListener {
                     onStartStopClick(item, object : Timer.TimeChangeListener {
-                        override fun onStart() {
+                        override fun onStart(currentTime: Long) {
                             item.isActive = true
                             setBlinking(true, indicator)
                             startStopBtn.text = context.getString(R.string.stop_btn)
                             progressPie.setProgress(item.progress)
-                            timerTv.text = item.currentTime.displayTime()
+                            timerTv.text = currentTime.displayTime()
                         }
 
-                        override fun onTimeChanged(currentTime: Long, progress: Int) {
-                            progressPie.setProgress(progress)
+                        override fun onTimeChanged(currentTime: Long) {
+                            progressPie.setProgress(item.progress)
                             timerTv.text = currentTime.displayTime()
                         }
 
@@ -127,7 +131,7 @@ class TimerListAdapter(
 
         private fun startTimer(item: TimerModel, listener: Timer.TimeChangeListener?) {
             stopTimer()
-            timer = Timer(item, context as? LifecycleOwner)
+            timer = LifecycleTimer(item, context as? LifecycleOwner)
             timer?.apply {
                 this.listener = listener
                 start()

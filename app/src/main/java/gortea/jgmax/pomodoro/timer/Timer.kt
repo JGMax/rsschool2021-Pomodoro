@@ -1,25 +1,28 @@
 package gortea.jgmax.pomodoro.timer
 
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.lifecycleScope
-import gortea.jgmax.pomodoro.models.TimerModel
+import androidx.annotation.CallSuper
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-class Timer(val model: TimerModel, private val lifecycleOwner: LifecycleOwner?) {
+open class Timer(
+    private val currentTime: Long,
+    private val scope: CoroutineScope?,
+    private val INTERVAL: Long = 1000L
+) {
     var listener: TimeChangeListener? = null
     private var isRunning = true
 
     fun start() {
-        listener?.onStart()
+        listener?.onStart(currentTime)
 
         isRunning = true
 
-        lifecycleOwner?.lifecycleScope?.launch(Dispatchers.Default) {
+        scope?.launch(Dispatchers.Default) {
             run()
             if (isRunning) {
-                lifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                scope.launch(Dispatchers.Main) {
                     stop(true)
                 }
             }
@@ -28,7 +31,7 @@ class Timer(val model: TimerModel, private val lifecycleOwner: LifecycleOwner?) 
 
     private suspend fun run() {
         val startSystemTime = System.currentTimeMillis()
-        val startTime = model.currentTime
+        val startTime = currentTime
         var currentTime = startTime
         while (currentTime > 0 && isRunning) {
             delay(INTERVAL / 2)
@@ -36,16 +39,16 @@ class Timer(val model: TimerModel, private val lifecycleOwner: LifecycleOwner?) 
             currentTime.coerceAtLeast(0L)
 
             if (isRunning) {
-                lifecycleOwner?.lifecycleScope?.launch(Dispatchers.Main) {
+                scope?.launch(Dispatchers.Main) {
                     updateCurrentTime(currentTime)
                 }
             }
         }
     }
 
-    private fun updateCurrentTime(currentTime: Long) {
-        model.currentTime = currentTime
-        listener?.onTimeChanged(currentTime, model.progress)
+    @CallSuper
+    protected open fun updateCurrentTime(currentTime: Long) {
+        listener?.onTimeChanged(currentTime)
     }
 
     private fun stop(isEnded: Boolean) {
@@ -57,13 +60,9 @@ class Timer(val model: TimerModel, private val lifecycleOwner: LifecycleOwner?) 
         stop(false)
     }
 
-    private companion object {
-        private const val INTERVAL = 1000L
-    }
-
     interface TimeChangeListener {
-        fun onStart()
-        fun onTimeChanged(currentTime: Long, progress: Int)
+        fun onStart(currentTime: Long)
+        fun onTimeChanged(currentTime: Long)
         fun onStop(isEnded: Boolean)
     }
 }

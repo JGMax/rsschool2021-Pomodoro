@@ -9,4 +9,7 @@
     <string name="start_btn">start</string>
     <string name="stop_btn">stop</string>
     <string name="restart_btn">restart</string>
+
+    <string name="timer_notification_group_title">Timer</string>
+    <string name="timer_ended_notification">Timer ended</string>
 </resources>

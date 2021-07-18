@@ -1,5 +1,6 @@
 package gortea.jgmax.pomodoro.timer
 
+import android.os.SystemClock.uptimeMillis
 import androidx.annotation.CallSuper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -36,7 +37,7 @@ open class Timer(
         var currentTime = startTime
         while (currentTime > 0 && isRunning) {
             delay(INTERVAL / 2)
-            currentTime = startTime - (System.currentTimeMillis() - startSystemTime) / INTERVAL
+            currentTime = startTime - (uptimeMillis() - startSystemTime) / INTERVAL
             currentTime.coerceAtLeast(0L)
 
             if (isRunning) {
@@ -49,7 +50,7 @@ open class Timer(
 
     fun setCurrentTime(currentTime: Long) {
         startTime = currentTime
-        startSystemTime = System.currentTimeMillis()
+        startSystemTime = uptimeMillis()
     }
 
     @CallSuper

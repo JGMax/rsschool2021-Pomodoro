@@ -73,7 +73,7 @@ class TimerListAdapter(
         RecyclerView.ViewHolder(binding.root) {
         fun bind(item: TimerModel, position: Int) {
             with(binding) {
-                timerTv.text = item.currentTime.displayTime()
+                timerTv.text = item.displayTime
 
                 val timerListener = getTimerListener(item, binding)
                 startStopBtn.setOnClickListener { onStartStopClick(item, timerListener) }
@@ -199,12 +199,12 @@ class TimerListAdapter(
             with(binding) {
                 item.apply {
                     currentTime = startTime
+                    progressPie.setProgress(progress)
+                    timerTv.text = currentTime.displayTime()
                     if (isActive) {
                         timer?.setCurrentTime(currentTime)
                     } else {
-                        timerTv.text = currentTime.displayTime()
                         startStopBtn.text = context.getString(R.string.start_btn)
-                        progressPie.setProgress(progress)
                     }
                 }
             }

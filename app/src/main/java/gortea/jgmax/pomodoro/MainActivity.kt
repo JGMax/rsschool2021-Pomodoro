@@ -10,7 +10,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import gortea.jgmax.pomodoro.adapters.TimerListAdapter
 import gortea.jgmax.pomodoro.constants.*
 import gortea.jgmax.pomodoro.databinding.ActivityMainBinding
+import gortea.jgmax.pomodoro.decorators.HorizontalDividers
+import gortea.jgmax.pomodoro.decorators.VerticalDividers
 import gortea.jgmax.pomodoro.dummy.DummyContent
+import gortea.jgmax.pomodoro.extentions.toPx
 import gortea.jgmax.pomodoro.models.TimerModel
 import gortea.jgmax.pomodoro.preferences.AppPreferences
 import gortea.jgmax.pomodoro.receivers.Receiver
@@ -46,6 +49,19 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner {
             layoutManager = LinearLayoutManager(this@MainActivity)
             val data = restoreTimersList() ?: DummyContent.ITEMS
             adapter = TimerListAdapter(data, this@MainActivity)
+            addItemDecoration(
+                HorizontalDividers(
+                    ITEM_HORIZONTAL_DIVIDER_DP.toPx(context)
+                )
+            )
+            addItemDecoration(
+                VerticalDividers(
+                    ITEM_VERTICAL_INNER_DIVIDER_DP.toPx(context),
+                    ITEM_VERTICAL_OUTER_DIVIDER_DP.toPx(context),
+                    header = false,
+                    footer = true
+                )
+            )
         }
     }
 

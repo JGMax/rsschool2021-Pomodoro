@@ -1,5 +1,8 @@
 package gortea.jgmax.pomodoro.extentions
 
+import android.content.Context
+import kotlin.math.roundToInt
+
 fun Long.displayTime(): String {
     if (this < 0L) {
         return "00:00:00"
@@ -17,4 +20,9 @@ fun Long.displayTime(): String {
     val secondsPart = this % 60
     val seconds = format(secondsPart)
     return "$hours:$minutes:$seconds"
+}
+
+fun Int.toPx(context: Context): Int {
+    val metrics = context.resources.displayMetrics
+    return (this * (metrics.density)).roundToInt()
 }

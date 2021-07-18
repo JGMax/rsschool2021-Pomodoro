@@ -1,6 +1,6 @@
 package gortea.jgmax.pomodoro.models
 
-import gortea.jgmax.pomodoro.extentions.displayTime
+import gortea.jgmax.pomodoro.utils.displayTime
 
 
 data class TimerModel(

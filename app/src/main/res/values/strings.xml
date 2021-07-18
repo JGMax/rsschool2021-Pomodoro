@@ -12,4 +12,6 @@
 
     <string name="timer_notification_group_title">Timer</string>
     <string name="timer_ended_notification">Timer ended</string>
+
+    <string name="empty_timer_alert">Zero duration</string>
 </resources>

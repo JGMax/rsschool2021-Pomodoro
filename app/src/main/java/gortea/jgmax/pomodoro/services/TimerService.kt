@@ -1,40 +1,24 @@
 package gortea.jgmax.pomodoro.services
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
-import android.app.Service
+import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
-import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import gortea.jgmax.pomodoro.MainActivity
 import gortea.jgmax.pomodoro.R
 import gortea.jgmax.pomodoro.constants.*
-import gortea.jgmax.pomodoro.extentions.displayTime
 import gortea.jgmax.pomodoro.timer.Timer
+import gortea.jgmax.pomodoro.utils.*
 import kotlinx.coroutines.GlobalScope
 
 class TimerService : Service() {
-    private companion object {
-        private const val CHANNEL_ID = "Pomodoro notification"
-        private const val NOTIFICATION_ID = 777
-    }
 
     private var isServiceStarted = false
+
     private var notificationManager: NotificationManager? = null
     private val builder by lazy {
-        NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(getString(R.string.app_name))
-            .setGroup(getString(R.string.timer_notification_group_title))
-            .setGroupSummary(false)
-            .setDefaults(NotificationCompat.DEFAULT_LIGHTS)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(getPendingIntent())
-            .setSilent(true)
-            .setSmallIcon(R.drawable.ic_tomato)
+        getNotificationBuilder(this)
     }
     private var timer: Timer? = null
     private var currentId: Int? = null
@@ -55,12 +39,6 @@ class TimerService : Service() {
         return null
     }
 
-    private fun getPendingIntent(): PendingIntent {
-        val intent = Intent(this, MainActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
-        return PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_ONE_SHOT)
-    }
-
     private fun processIntent(intent: Intent?) {
         when (intent?.extras?.getString(COMMAND_ID) ?: INVALID) {
             COMMAND_START -> {
@@ -73,15 +51,15 @@ class TimerService : Service() {
         }
     }
 
-    private fun stop() {
+    private fun stop(removeNotification: Boolean = true) {
         if (!isServiceStarted) return
+        //todo swipe notification when timer ends
 
+        timer?.stop()
+        timer = null
         try {
-            timer?.stop()
-
-            timer = null
-            stopForeground(true)
-            stopSelf()
+            stopForeground(removeNotification)
+            if (removeNotification) stopSelf()
         } finally {
             isServiceStarted = false
         }
@@ -108,8 +86,12 @@ class TimerService : Service() {
     }
 
     private fun startAndNotify() {
-        createChannel()
-        startForeground(NOTIFICATION_ID, getNotification("content"))
+        createChannel(
+            this,
+            notificationManager,
+            NOTIFICATION_SOUND_URI
+        )
+        startForeground(NOTIFICATION_ID, getNotification("content", builder))
     }
 
     private fun startTimer(currentTime: Long) {
@@ -119,21 +101,12 @@ class TimerService : Service() {
         timer?.start()
     }
 
-    private fun createChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channelName = getString(R.string.app_name)
-            val importance = NotificationManager.IMPORTANCE_DEFAULT
-            val channel = NotificationChannel(CHANNEL_ID, channelName, importance)
-            notificationManager?.createNotificationChannel(channel)
-        }
-    }
-
     private fun getTimerListener() = object : Timer.TimeChangeListener {
         override fun onStart(currentTime: Long) {
             if (isServiceStarted) {
                 notificationManager?.notify(
                     NOTIFICATION_ID,
-                    getNotification(currentTime.displayTime())
+                    getNotification(currentTime.displayTime(), builder)
                 )
             }
         }
@@ -143,22 +116,28 @@ class TimerService : Service() {
             if (isServiceStarted) {
                 notificationManager?.notify(
                     NOTIFICATION_ID,
-                    getNotification(currentTime.displayTime())
+                    getNotification(currentTime.displayTime(), builder)
                 )
             }
         }
 
         override fun onStop(isEnded: Boolean) {
             if (isEnded) {
+                timer = null
                 notificationManager?.notify(
                     NOTIFICATION_ID,
-                    getNotification(getString(R.string.timer_ended_notification))
+                    getNotification(
+                        getString(R.string.timer_ended_notification),
+                        builder,
+                        withSound = true,
+                        flags = Notification.FLAG_AUTO_CANCEL
+                    )
                 )
+                showToast(R.string.timer_ended_notification, this@TimerService)
+                stop()
             }
         }
     }
-
-    private fun getNotification(content: String) = builder.setContentText(content).build()
 
     private fun sendLocalBroadcast() {
         val dataIntent = Intent(RESULT_INTENT_FILTER)

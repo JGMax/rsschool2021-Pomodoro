@@ -1,8 +1,16 @@
 package gortea.jgmax.pomodoro
 
+import android.app.Notification
+import android.app.NotificationManager
+import android.app.TimePickerDialog
+import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
+import android.util.Log
+import android.util.TypedValue
+import android.widget.Toast
+import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.*
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -12,18 +20,24 @@ import gortea.jgmax.pomodoro.constants.*
 import gortea.jgmax.pomodoro.databinding.ActivityMainBinding
 import gortea.jgmax.pomodoro.decorators.HorizontalDividers
 import gortea.jgmax.pomodoro.decorators.VerticalDividers
-import gortea.jgmax.pomodoro.dummy.DummyContent
-import gortea.jgmax.pomodoro.extentions.toPx
 import gortea.jgmax.pomodoro.models.TimerModel
 import gortea.jgmax.pomodoro.preferences.AppPreferences
 import gortea.jgmax.pomodoro.receivers.Receiver
 import gortea.jgmax.pomodoro.services.TimerService
+import gortea.jgmax.pomodoro.utils.*
 
-class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner {
+class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner,
+    TimerListAdapter.TimerEventsListener {
 
     private val binding: ActivityMainBinding by lazy {
         ActivityMainBinding.inflate(layoutInflater)
     }
+
+    private val builder by lazy {
+        getNotificationBuilder(this)
+    }
+
+    private var showNotification = true
 
     private val receiver = Receiver { _, data ->
         if (data == null) return@Receiver
@@ -39,16 +53,45 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         lifecycle.addObserver(this)
-        setContentView(binding.root)
+        with(binding) {
+            setContentView(root)
+            addBtn.setOnClickListener { onAddClick() }
+        }
         setupRecyclerView()
     }
 
+    private fun onAddClick() {
+        val adapter = binding.timerList.adapter as? TimerListAdapter ?: return
+        val listener = TimePickerDialog.OnTimeSetListener { _, hourOfDay, minute ->
+            val startTimeSeconds = minute * 60L + hourOfDay * 3600L
+            if (startTimeSeconds == 0L) {
+                showToast(R.string.empty_timer_alert, this)
+            } else {
+                adapter.add(TimerModel(startTimeSeconds))
+            }
+        }
+
+        val dialog = TimePickerDialog(this, listener, 0, 5, true)
+        val buttonColorValue = TypedValue()
+        theme.resolveAttribute(R.attr.colorSecondary, buttonColorValue, true)
+
+        dialog.apply {
+            show()
+            getButton(TimePickerDialog.BUTTON_POSITIVE)?.setTextColor(buttonColorValue.data)
+            getButton(TimePickerDialog.BUTTON_NEGATIVE)?.setTextColor(buttonColorValue.data)
+            getButton(TimePickerDialog.BUTTON_NEUTRAL)?.setTextColor(buttonColorValue.data)
+        }
+    }
+
     private fun setupRecyclerView() {
-        DummyContent.build(10)
         binding.timerList.apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
-            val data = restoreTimersList() ?: DummyContent.ITEMS
-            adapter = TimerListAdapter(data, this@MainActivity)
+            val data = restoreTimersList() ?: arrayListOf()
+            adapter = TimerListAdapter(
+                data,
+                this@MainActivity,
+                timerEventsListener = this@MainActivity
+            )
             addItemDecoration(
                 HorizontalDividers(
                     ITEM_HORIZONTAL_DIVIDER_DP.toPx(context)
@@ -56,10 +99,7 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner {
             )
             addItemDecoration(
                 VerticalDividers(
-                    ITEM_VERTICAL_INNER_DIVIDER_DP.toPx(context),
-                    ITEM_VERTICAL_OUTER_DIVIDER_DP.toPx(context),
-                    header = false,
-                    footer = true
+                    ITEM_VERTICAL_INNER_DIVIDER_DP.toPx(context)
                 )
             )
         }
@@ -72,7 +112,7 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner {
 
     private fun saveTimersList(adapter: TimerListAdapter) {
         val appPreferences = AppPreferences(this)
-        appPreferences.putList(TIMERS_LIST_KEY, adapter.timers)
+        appPreferences.putList(TIMERS_LIST_KEY, adapter.getDataList())
     }
 
 
@@ -91,6 +131,7 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner {
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
     private fun onBackgroundActivity() {
+        showNotification = false
         val adapter = binding.timerList.adapter as? TimerListAdapter ?: return
         saveTimersList(adapter)
 
@@ -106,9 +147,31 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner {
 
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
     fun onForegroundActivity() {
+        showNotification = true
         val intent = Intent(this, TimerService::class.java)
         intent.putExtra(COMMAND_ID, COMMAND_STOP)
         startService(intent)
+    }
+
+    override fun onStop(item: TimerModel, isEnded: Boolean) {
+        if (isEnded) {
+            if (showNotification) {
+                val manager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+                createChannel(
+                    this,
+                    manager,
+                    NOTIFICATION_SOUND_URI
+                )
+                val notification = getNotification(
+                    getString(R.string.timer_ended_notification),
+                    builder,
+                    withSound = true,
+                    flags = Notification.FLAG_AUTO_CANCEL
+                )
+                manager?.notify(NOTIFICATION_ID, notification)
+            }
+            showToast(R.string.timer_ended_notification, this)
+        }
     }
 
     private companion object {

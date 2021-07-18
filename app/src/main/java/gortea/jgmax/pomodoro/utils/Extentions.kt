@@ -1,4 +1,4 @@
-package gortea.jgmax.pomodoro.extentions
+package gortea.jgmax.pomodoro.utils
 
 import android.content.Context
 import kotlin.math.roundToInt

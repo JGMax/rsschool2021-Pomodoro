@@ -2,7 +2,6 @@ package gortea.jgmax.pomodoro.adapters
 
 import android.content.Context
 import android.graphics.drawable.AnimationDrawable
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,13 +20,8 @@ import gortea.jgmax.pomodoro.timer.LifecycleTimer
 import gortea.jgmax.pomodoro.timer.Timer
 import gortea.jgmax.pomodoro.utils.displayTime
 
-enum class ItemTypes(val value: Int) {
-    TIMER(0), FOOTER(1);
-}
-
 class TimerListAdapter(
     items: List<TimerModel>,
-    private val context: Context,
     private val timerEventsListener: TimerEventsListener? = null
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
@@ -37,15 +31,15 @@ class TimerListAdapter(
 
     override fun getItemViewType(position: Int): Int {
         return if (position == timers.size) {
-            ItemTypes.FOOTER.value
+            R.layout.footer
         } else {
-            ItemTypes.TIMER.value
+            R.layout.timer_item
         }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return when (viewType) {
-            ItemTypes.FOOTER.value -> {
+            R.layout.footer -> {
                 val footerBinding =
                     FooterBinding.inflate(LayoutInflater.from(parent.context), parent, false)
                 FooterViewHolder(footerBinding)
@@ -115,7 +109,11 @@ class TimerListAdapter(
         return true
     }
 
-    private fun startTimer(item: TimerModel, listener: Timer.TimeChangeListener?) {
+    private fun startTimer(
+        item: TimerModel,
+        listener: Timer.TimeChangeListener?,
+        context: Context
+    ) {
         stopTimer()
         timer = LifecycleTimer(item, context as? LifecycleOwner)
         timer?.apply {
@@ -137,7 +135,7 @@ class TimerListAdapter(
 
                 startStopBtn.setOnClickListener {
                     val timerListener = getTimerListener(item, binding)
-                    onStartStopClick(item, timerListener)
+                    onStartStopClick(item, timerListener, it.context)
                 }
 
                 resetBtn.setOnClickListener { onResetClick(it, item, binding) }
@@ -162,17 +160,20 @@ class TimerListAdapter(
             startStopBtn: Button,
             binding: TimerItemBinding
         ) {
+            val context = binding.indicator.context
             setBlinking(item.isActive, indicator)
-            if (item.isActive) {
-                if (timer == null) {
-                    val listener = getTimerListener(item, binding)
-                    startTimer(item, listener)
+            startStopBtn.text = when {
+                item.isActive -> {
+                    if (timer == null) {
+                        val listener = getTimerListener(item, binding)
+                        startTimer(item, listener, context)
+                    }
+                    context.getString(R.string.stop_btn)
                 }
-                startStopBtn.text = context.getString(R.string.stop_btn)
-            } else {
-                startStopBtn.text = if (item.currentTime == 0L) {
+                item.currentTime == 0L -> {
                     context.getString(R.string.restart_btn)
-                } else {
+                }
+                else -> {
                     context.getString(R.string.start_btn)
                 }
             }
@@ -185,7 +186,8 @@ class TimerListAdapter(
             override fun onStart(currentTime: Long) {
                 item.isActive = true
                 with(binding) {
-                    setBlinking(true, indicator, true)
+                    val context = indicator.context
+                    setBlinking(true, indicator)
                     startStopBtn.text = context.getString(R.string.stop_btn)
                     progressPie.setProgress(item.progress)
                     timerTv.text = currentTime.displayTime()
@@ -205,6 +207,7 @@ class TimerListAdapter(
                 item.isActive = false
                 timer = null
                 with(binding) {
+                    val context = indicator.context
                     setBlinking(false, indicator)
                     startStopBtn.text = if (isEnded) {
                         context.getString(R.string.restart_btn)
@@ -216,17 +219,21 @@ class TimerListAdapter(
             }
         }
 
-        private fun setBlinking(isActive: Boolean, indicator: ImageView, force: Boolean = false) {
+        private fun setBlinking(isActive: Boolean, indicator: ImageView) {
             fun startBlinking(view: ImageView) {
-                if (!view.isVisible || force) {
+                val anim = (view.background as? AnimationDrawable) ?: return
+                if (!anim.isRunning) {
                     view.isVisible = true
-                    (view.background as? AnimationDrawable)?.start()
+                    anim.start()
                 }
             }
 
             fun stopBlinking(view: ImageView) {
                 view.isVisible = false
-                (view.background as? AnimationDrawable)?.stop()
+                val anim = (view.background as? AnimationDrawable) ?: return
+                if (anim.isRunning) {
+                    anim.stop()
+                }
             }
 
             if (isActive) {
@@ -236,13 +243,17 @@ class TimerListAdapter(
             }
         }
 
-        private fun onStartStopClick(item: TimerModel, listener: Timer.TimeChangeListener?) {
+        private fun onStartStopClick(
+            item: TimerModel,
+            listener: Timer.TimeChangeListener?,
+            context: Context
+        ) {
             if (item.currentTime == 0L && !item.isActive) {
                 item.currentTime = item.startTime
             }
 
             if (timer?.model != item) {
-                startTimer(item, listener)
+                startTimer(item, listener, context)
             } else {
                 stopTimer()
             }
@@ -253,6 +264,7 @@ class TimerListAdapter(
             item: TimerModel,
             binding: TimerItemBinding
         ) {
+            val context = binding.indicator.context
             val vectorIcon = AnimatedVectorDrawableCompat.create(context, R.drawable.animated_reset)
             (view as? MaterialButton)?.icon = vectorIcon
             vectorIcon?.start()

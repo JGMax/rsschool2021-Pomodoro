@@ -89,7 +89,6 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner,
             val data = restoreTimersList() ?: arrayListOf()
             adapter = TimerListAdapter(
                 data,
-                this@MainActivity,
                 timerEventsListener = this@MainActivity
             )
             addItemDecoration(
@@ -151,6 +150,11 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner,
         val intent = Intent(this, TimerService::class.java)
         intent.putExtra(COMMAND_ID, COMMAND_STOP)
         startService(intent)
+    }
+
+    override fun onStart(item: TimerModel, currentTime: Long) {
+        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+        manager?.cancelAll()
     }
 
     override fun onStop(item: TimerModel, isEnded: Boolean) {

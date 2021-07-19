@@ -157,8 +157,8 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner,
         manager?.cancelAll()
     }
 
-    override fun onStop(item: TimerModel, isEnded: Boolean) {
-        if (isEnded) {
+    override fun onStop(item: TimerModel, currentTime: Long) {
+        if (currentTime == 0L) {
             if (showNotification) {
                 val manager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
                 createChannel(

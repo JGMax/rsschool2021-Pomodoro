@@ -47,6 +47,7 @@ fun getNotification(
     val notification = builder
         .setContentText(content)
         .setSilent(!withSound)
+        .setDefaults(Notification.DEFAULT_SOUND)
         .build()
     notification.flags = notification.flags or flags
     return notification

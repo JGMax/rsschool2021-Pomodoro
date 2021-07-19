@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import gortea.jgmax.pomodoro.R
 import gortea.jgmax.pomodoro.constants.*
@@ -15,6 +16,7 @@ import kotlinx.coroutines.GlobalScope
 class TimerService : Service() {
 
     private var isServiceStarted = false
+    private var isServiceForegroundStarted = false
 
     private var notificationManager: NotificationManager? = null
     private val builder by lazy {
@@ -53,27 +55,31 @@ class TimerService : Service() {
 
     private fun stop(removeNotification: Boolean = true) {
         if (!isServiceStarted) return
-        //todo swipe notification when timer ends
 
-        timer?.stop()
-        timer = null
+        stopTimer()
         try {
             stopForeground(removeNotification)
-            if (removeNotification) stopSelf()
+            if (removeNotification) {
+                stopSelf()
+                isServiceStarted = false
+            }
         } finally {
-            isServiceStarted = false
+            isServiceForegroundStarted = false
         }
     }
 
     private fun start(currentTime: Long) {
-        if (isServiceStarted) return
+        if (isServiceForegroundStarted) return
 
         try {
-            moveToStartedState()
+            if (!isServiceStarted) {
+                moveToStartedState()
+                isServiceStarted = true
+            }
             startAndNotify()
             startTimer(currentTime)
         } finally {
-            isServiceStarted = true
+            isServiceForegroundStarted = true
         }
     }
 
@@ -95,10 +101,15 @@ class TimerService : Service() {
     }
 
     private fun startTimer(currentTime: Long) {
-        timer?.stop()
+        stopTimer()
         timer = Timer(currentTime, GlobalScope)
         timer?.listener = getTimerListener()
         timer?.start()
+    }
+
+    private fun stopTimer() {
+        timer?.stop()
+        timer = null
     }
 
     private fun getTimerListener() = object : Timer.TimeChangeListener {
@@ -121,8 +132,8 @@ class TimerService : Service() {
             }
         }
 
-        override fun onStop(isEnded: Boolean) {
-            if (isEnded) {
+        override fun onStop(currentTime: Long) {
+            if (currentTime == 0L) {
                 timer = null
                 notificationManager?.notify(
                     NOTIFICATION_ID,
@@ -134,7 +145,7 @@ class TimerService : Service() {
                     )
                 )
                 showToast(R.string.timer_ended_notification, this@TimerService)
-                stop()
+                stop(false)
             }
         }
     }
@@ -150,6 +161,7 @@ class TimerService : Service() {
 
     override fun onDestroy() {
         sendLocalBroadcast()
+        Log.e("Service", "Destroyed")
         super.onDestroy()
     }
 }

@@ -16,6 +16,7 @@ open class Timer(
     private var isRunning = true
     private var startTime = currentTime
     private var startSystemTime = 0L
+    private var currentTimerTime = startTime
 
     fun start() {
         listener?.onStart(currentTime)
@@ -26,7 +27,7 @@ open class Timer(
             run()
             if (isRunning) {
                 scope.launch(Dispatchers.Main) {
-                    stop(true)
+                    stop()
                 }
             }
         }
@@ -34,15 +35,15 @@ open class Timer(
 
     private suspend fun run() {
         setCurrentTime(currentTime)
-        var currentTime = startTime
-        while (currentTime > 0 && isRunning) {
+        currentTimerTime = startTime
+        while (currentTimerTime > 0 && isRunning) {
             delay(INTERVAL / 2)
-            currentTime = startTime - (uptimeMillis() - startSystemTime) / INTERVAL
-            currentTime.coerceAtLeast(0L)
+            currentTimerTime = startTime - (uptimeMillis() - startSystemTime) / INTERVAL
+            currentTimerTime.coerceAtLeast(0L)
 
             if (isRunning) {
                 scope?.launch(Dispatchers.Main) {
-                    updateCurrentTime(currentTime)
+                    updateCurrentTime(currentTimerTime)
                 }
             }
         }
@@ -51,6 +52,10 @@ open class Timer(
     fun setCurrentTime(currentTime: Long) {
         startTime = currentTime
         startSystemTime = uptimeMillis()
+        currentTimerTime = currentTime
+        if (currentTime == 0L) {
+            stop()
+        }
     }
 
     @CallSuper
@@ -58,18 +63,15 @@ open class Timer(
         listener?.onTimeChanged(currentTime)
     }
 
-    private fun stop(isEnded: Boolean) {
+    @CallSuper
+    open fun stop() {
         isRunning = false
-        listener?.onStop(isEnded)
-    }
-
-    fun stop() {
-        stop(false)
+        listener?.onStop(currentTimerTime)
     }
 
     interface TimeChangeListener {
         fun onStart(currentTime: Long)
         fun onTimeChanged(currentTime: Long)
-        fun onStop(isEnded: Boolean)
+        fun onStop(currentTime: Long)
     }
 }

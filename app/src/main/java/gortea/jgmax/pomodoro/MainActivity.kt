@@ -33,12 +33,6 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner,
         ActivityMainBinding.inflate(layoutInflater)
     }
 
-    private val builder by lazy {
-        getNotificationBuilder(this)
-    }
-
-    private var showNotification = true
-
     private val receiver = Receiver { _, data ->
         if (data == null) return@Receiver
         val currentId = data.extras?.getInt(CURRENT_ID_KEY) ?: return@Receiver
@@ -130,7 +124,6 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner,
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
     private fun onBackgroundActivity() {
-        showNotification = false
         val adapter = binding.timerList.adapter as? TimerListAdapter ?: return
         saveTimersList(adapter)
 
@@ -146,34 +139,16 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner,
 
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
     fun onForegroundActivity() {
-        showNotification = true
+        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+        manager?.cancelAll()
+
         val intent = Intent(this, TimerService::class.java)
         intent.putExtra(COMMAND_ID, COMMAND_STOP)
         startService(intent)
     }
 
-    override fun onStart(item: TimerModel, currentTime: Long) {
-        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
-        manager?.cancelAll()
-    }
-
     override fun onStop(item: TimerModel, currentTime: Long) {
         if (currentTime == 0L) {
-            if (showNotification) {
-                val manager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
-                createChannel(
-                    this,
-                    manager,
-                    NOTIFICATION_SOUND_URI
-                )
-                val notification = getNotification(
-                    getString(R.string.timer_ended_notification),
-                    builder,
-                    withSound = true,
-                    flags = Notification.FLAG_AUTO_CANCEL
-                )
-                manager?.notify(NOTIFICATION_ID, notification)
-            }
             showToast(R.string.timer_ended_notification, this)
         }
     }

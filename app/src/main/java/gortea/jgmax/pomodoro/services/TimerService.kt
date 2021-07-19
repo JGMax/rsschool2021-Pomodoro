@@ -16,7 +16,6 @@ import kotlinx.coroutines.GlobalScope
 class TimerService : Service() {
 
     private var isServiceStarted = false
-    private var isServiceForegroundStarted = false
 
     private var notificationManager: NotificationManager? = null
     private val builder by lazy {
@@ -53,33 +52,27 @@ class TimerService : Service() {
         }
     }
 
-    private fun stop(removeNotification: Boolean = true) {
+    private fun stop() {
         if (!isServiceStarted) return
 
         stopTimer()
         try {
-            stopForeground(removeNotification)
-            if (removeNotification) {
-                stopSelf()
-                isServiceStarted = false
-            }
+            stopForeground(true)
+            stopSelf()
         } finally {
-            isServiceForegroundStarted = false
+            isServiceStarted = false
         }
     }
 
     private fun start(currentTime: Long) {
-        if (isServiceForegroundStarted) return
+        if (isServiceStarted) return
 
         try {
-            if (!isServiceStarted) {
-                moveToStartedState()
-                isServiceStarted = true
-            }
+            moveToStartedState()
             startAndNotify()
             startTimer(currentTime)
         } finally {
-            isServiceForegroundStarted = true
+            isServiceStarted = true
         }
     }
 
@@ -145,7 +138,6 @@ class TimerService : Service() {
                     )
                 )
                 showToast(R.string.timer_ended_notification, this@TimerService)
-                stop(false)
             }
         }
     }

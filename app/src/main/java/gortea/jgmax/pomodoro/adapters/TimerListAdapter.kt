@@ -114,6 +114,8 @@ class TimerListAdapter(
         RecyclerView.ViewHolder(binding.root), TimerStateObserver {
         fun bind(item: TimerModel, position: Int) {
             with(binding) {
+                activeMonitor(item, binding)
+
                 timerTv.text = item.displayTime
 
                 startStopBtn.setOnClickListener { onStartStopClick(item) }
@@ -125,7 +127,6 @@ class TimerListAdapter(
                 }
 
                 progressPie.setProgress(item.progress, withAnimation = false)
-                activeMonitor(item, indicator, startStopBtn, binding)
 
                 if (item.isActive && updateListener) {
                     attachObserver()
@@ -144,13 +145,14 @@ class TimerListAdapter(
 
         private fun activeMonitor(
             item: TimerModel,
-            indicator: ImageView,
-            startStopBtn: Button,
             binding: TimerItemBinding
         ) {
+            if (item.isActive && presenter.getId() == item.id) {
+                item.currentTime = presenter.getCurrentTime()
+            }
+
             val context = binding.indicator.context
-            setBlinking(item.isActive, indicator)
-            startStopBtn.text = when {
+            binding.startStopBtn.text = when {
                 item.isActive && item.currentTime != 0L -> {
                     attachObserver()
                     presenter.startTimer(item.id, item.currentTime)
@@ -165,6 +167,7 @@ class TimerListAdapter(
                     context.getString(R.string.start_btn)
                 }
             }
+            setBlinking(item.isActive, binding.indicator)
         }
 
         private fun setBlinking(isActive: Boolean, indicator: ImageView) {

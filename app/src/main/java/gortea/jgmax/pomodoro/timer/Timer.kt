@@ -40,6 +40,8 @@ open class Timer(
         }
     }
 
+    fun getCurrentTime() = currentTimerTime
+
     private suspend fun run() {
         setCurrentTime(currentTimerTime)
         currentTimerTime = startTime

@@ -1,16 +1,13 @@
 package gortea.jgmax.pomodoro.presenters
 
-import android.content.IntentFilter
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.RecyclerView
 import gortea.jgmax.pomodoro.R
 import gortea.jgmax.pomodoro.adapters.TimerListAdapter
 import gortea.jgmax.pomodoro.constants.CURRENT_ID_KEY
 import gortea.jgmax.pomodoro.constants.CURRENT_TIME_KEY
-import gortea.jgmax.pomodoro.constants.RESULT_INTENT_FILTER
 import gortea.jgmax.pomodoro.models.TimerModel
 import gortea.jgmax.pomodoro.receivers.Receiver
 import gortea.jgmax.pomodoro.timer.Timer
@@ -58,6 +55,8 @@ object Presenter : TimerStateObserver, LifecycleObserver {
     fun attachRegister(register: ReceiverRegister) {
         this.register = register
     }
+
+    fun getCurrentTime() = timer.getCurrentTime()
 
     fun detachAll() {
         detachAll(Any::class)

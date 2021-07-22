@@ -1,16 +1,25 @@
 package gortea.jgmax.pomodoro.presenters
 
+import android.content.IntentFilter
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.OnLifecycleEvent
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.RecyclerView
 import gortea.jgmax.pomodoro.R
 import gortea.jgmax.pomodoro.adapters.TimerListAdapter
+import gortea.jgmax.pomodoro.constants.CURRENT_ID_KEY
+import gortea.jgmax.pomodoro.constants.CURRENT_TIME_KEY
+import gortea.jgmax.pomodoro.constants.RESULT_INTENT_FILTER
 import gortea.jgmax.pomodoro.models.TimerModel
+import gortea.jgmax.pomodoro.receivers.Receiver
 import gortea.jgmax.pomodoro.timer.Timer
 import gortea.jgmax.pomodoro.timer.TimerStateObserver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlin.reflect.KClass
 
-object Presenter : TimerStateObserver {
+object Presenter : TimerStateObserver, LifecycleObserver {
     private val timer: Timer =
         Timer(
             -1,
@@ -19,6 +28,40 @@ object Presenter : TimerStateObserver {
         ).also { it.attachObserver(this) }
 
     private var sender: NotificationSender? = null
+    private var register: ReceiverRegister? = null
+
+    private val receiver = Receiver { _, data ->
+        if (data == null) return@Receiver
+        val currentId = data.extras?.getInt(CURRENT_ID_KEY) ?: return@Receiver
+        val currentTime = data.extras?.getLong(CURRENT_TIME_KEY) ?: return@Receiver
+
+        setCurrentData(currentId, currentTime)
+    }
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
+    private fun registerLocalReceiver() {
+        register?.registerLocalReceiver(receiver)
+    }
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+    private fun unregisterLocalReceiver() {
+        register?.unregisterLocalReceiver(receiver)
+    }
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+    private fun clearRegister() {
+        register = null
+    }
+
+    fun attachRegister(register: ReceiverRegister) {
+        this.register = register
+    }
+
+    fun detachAll() {
+        detachAll(Any::class)
+        sender = null
+        register = null
+    }
 
     fun detachAll(type: KClass<*>) {
         timer.detachAll(type)
@@ -77,6 +120,11 @@ object Presenter : TimerStateObserver {
             return true
         }
         return false
+    }
+
+    private fun setCurrentData(id: Int, currentTime: Long) {
+        timer.id = id
+        timer.setCurrentTime(currentTime)
     }
 
     fun setCurrentTime(id: Int, currentTime: Long) {

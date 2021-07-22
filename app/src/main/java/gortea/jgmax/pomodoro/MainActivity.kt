@@ -4,10 +4,13 @@ import android.app.NotificationManager
 import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
+import android.util.Log
 import android.util.TypedValue
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.*
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import gortea.jgmax.pomodoro.adapters.TimerListAdapter
 import gortea.jgmax.pomodoro.constants.*
@@ -18,11 +21,13 @@ import gortea.jgmax.pomodoro.models.TimerModel
 import gortea.jgmax.pomodoro.preferences.AppPreferences
 import gortea.jgmax.pomodoro.presenters.NotificationSender
 import gortea.jgmax.pomodoro.presenters.Presenter
+import gortea.jgmax.pomodoro.presenters.ReceiverRegister
+import gortea.jgmax.pomodoro.receivers.Receiver
 import gortea.jgmax.pomodoro.services.TimerService
 import gortea.jgmax.pomodoro.utils.*
 
 class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner,
-    NotificationSender {
+    NotificationSender, ReceiverRegister {
 
     private val binding: ActivityMainBinding by lazy {
         ActivityMainBinding.inflate(layoutInflater)
@@ -30,9 +35,17 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner,
 
     private val presenter = Presenter
 
+    init {
+        Log.e("presenterActivity", presenter.toString())
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         lifecycle.addObserver(this)
+        lifecycle.addObserver(presenter)
+
+        presenter.attachRegister(this)
         presenter.detachAll(TimerListAdapter.ItemViewHolder::class)
         with(binding) {
             setContentView(root)
@@ -133,5 +146,15 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner,
 
     private companion object {
         private const val TIMERS_LIST_KEY = "TIMERS_LIST"
+    }
+
+    override fun registerLocalReceiver(receiver: Receiver) {
+        LocalBroadcastManager
+            .getInstance(this)
+            .registerReceiver(receiver, IntentFilter(RESULT_INTENT_FILTER))
+    }
+
+    override fun unregisterLocalReceiver(receiver: Receiver) {
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(receiver)
     }
 }

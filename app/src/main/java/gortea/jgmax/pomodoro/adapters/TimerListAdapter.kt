@@ -60,9 +60,6 @@ class TimerListAdapter(
 
     override fun getItemCount(): Int = timers.size + 1
 
-    fun getCurrentTime(): Long = 0L
-    fun getCurrentId(): Int = 0
-
     fun getDataList(): List<TimerModel> = timers.toList()
 
     fun add(item: TimerModel): Boolean {

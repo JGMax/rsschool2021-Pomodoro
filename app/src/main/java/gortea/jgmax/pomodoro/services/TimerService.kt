@@ -8,6 +8,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import gortea.jgmax.pomodoro.R
 import gortea.jgmax.pomodoro.constants.*
 import gortea.jgmax.pomodoro.presenters.NotificationSender
@@ -25,6 +26,12 @@ class TimerService : Service(), TimerStateObserver, NotificationSender {
     }
 
     private val presenter = Presenter
+    private var currentTime: Long = 0L
+    private val currentId: Int = presenter.getId()
+
+    init {
+        Log.e("presenter", presenter.toString())
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -92,14 +99,17 @@ class TimerService : Service(), TimerStateObserver, NotificationSender {
         startForeground(NOTIFICATION_ID, getNotification("content", builder))
     }
 
-    override fun onDestroy() {
-        Log.e("Service", "Destroyed")
-        presenter.detachNotificationSender(this)
-        presenter.detachTimerObserver(this)
-        super.onDestroy()
+    private fun sendLocalBroadcast() {
+        val dataIntent = Intent(RESULT_INTENT_FILTER)
+        dataIntent.apply {
+            putExtra(CURRENT_ID_KEY, currentId)
+            putExtra(CURRENT_TIME_KEY, currentTime)
+        }
+        LocalBroadcastManager.getInstance(this).sendBroadcast(dataIntent)
     }
 
     override fun onStart(currentTime: Long) {
+        this.currentTime = currentTime
         if (isServiceStarted) {
             notificationManager?.notify(
                 NOTIFICATION_ID,
@@ -109,6 +119,7 @@ class TimerService : Service(), TimerStateObserver, NotificationSender {
     }
 
     override fun onTimeChanged(currentTime: Long) {
+        this.currentTime = currentTime
         if (isServiceStarted) {
             notificationManager?.notify(
                 NOTIFICATION_ID,
@@ -118,6 +129,7 @@ class TimerService : Service(), TimerStateObserver, NotificationSender {
     }
 
     override fun onStop(currentTime: Long) {
+        this.currentTime = currentTime
         if (isServiceStarted) {
             notificationManager?.notify(
                 NOTIFICATION_ID,
@@ -136,5 +148,13 @@ class TimerService : Service(), TimerStateObserver, NotificationSender {
             is String -> showToast(message, this)
             is Int -> showToast(message, this)
         }
+    }
+
+    override fun onDestroy() {
+        Log.e("Service", "Destroyed")
+        presenter.detachNotificationSender(this)
+        presenter.detachTimerObserver(this)
+        sendLocalBroadcast()
+        super.onDestroy()
     }
 }

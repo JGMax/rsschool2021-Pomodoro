@@ -8,7 +8,6 @@ interface TimerObservable {
 
     @CallSuper
     fun sendNewCallback(state: TimerState) {
-        Log.e("observers", observers.toString())
         observers.forEach {
             when (state) {
                 is TimerState.Started -> it.onStart(state.currentTime)

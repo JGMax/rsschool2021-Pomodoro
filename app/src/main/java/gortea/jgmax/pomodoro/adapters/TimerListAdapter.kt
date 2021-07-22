@@ -5,7 +5,6 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.ImageView
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
@@ -53,8 +52,12 @@ class TimerListAdapter(
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+
         when (holder) {
-            is ItemViewHolder -> holder.bind(timers[position], position)
+            is ItemViewHolder -> {
+                val item = timers[position]
+                holder.bind(item, position)
+            }
         }
     }
 
@@ -94,11 +97,9 @@ class TimerListAdapter(
         val item = timers.removeAt(position)
         notifyItemRemoved(position)
         notifyItemRangeChanged(position, itemCount)
-
         if (presenter.stopTimer(item.id)) {
             detachObserver()
         }
-
         return true
     }
 
@@ -106,6 +107,7 @@ class TimerListAdapter(
         if (attachedObserver != null) {
             presenter.detachTimerObserver(requireNotNull(attachedObserver))
         }
+
         (attachedObserver as? RecyclerView.ViewHolder)?.setIsRecyclable(true)
         attachedObserver = null
     }
@@ -137,10 +139,11 @@ class TimerListAdapter(
 
         private fun attachObserver() {
             if (this == attachedObserver) return
+            Log.e("reattached", this.toString())
             detachObserver()
             presenter.attachTimerObserver(this)
             attachedObserver = this
-            setIsRecyclable(false)
+            (attachedObserver as? RecyclerView.ViewHolder)?.setIsRecyclable(false)
         }
 
         private fun activeMonitor(
@@ -149,6 +152,7 @@ class TimerListAdapter(
         ) {
             if (item.isActive && presenter.getId() == item.id) {
                 item.currentTime = presenter.getCurrentTime()
+                item.isActive = item.currentTime > 0L
             }
 
             val context = binding.indicator.context
@@ -159,11 +163,9 @@ class TimerListAdapter(
                     context.getString(R.string.stop_btn)
                 }
                 item.currentTime == 0L -> {
-                    item.isActive = false
                     context.getString(R.string.restart_btn)
                 }
                 else -> {
-                    item.isActive = false
                     context.getString(R.string.start_btn)
                 }
             }
@@ -258,8 +260,6 @@ class TimerListAdapter(
         override fun onTimeChanged(currentTime: Long) {
             val item = timers.find { it.id == presenter.getId() } ?: return
             item.currentTime = currentTime
-            Log.e("item", item.toString() + item.currentTime.toString())
-            Log.e("changed", this.toString())
             with(binding) {
                 progressPie.setProgress(item.progress)
                 timerTv.text = currentTime.displayTime()
@@ -271,6 +271,7 @@ class TimerListAdapter(
             item.currentTime = currentTime
             item.isActive = false
             Log.e("stopped", this.toString())
+            (attachedObserver as? RecyclerView.ViewHolder)?.setIsRecyclable(true)
             with(binding) {
                 val context = indicator.context
                 setBlinking(false, indicator)

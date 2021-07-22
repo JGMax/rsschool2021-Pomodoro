@@ -35,7 +35,9 @@ object Presenter : TimerStateObserver, LifecycleObserver {
         val currentId = data.extras?.getInt(CURRENT_ID_KEY) ?: return@Receiver
         val currentTime = data.extras?.getLong(CURRENT_TIME_KEY) ?: return@Receiver
 
-        setCurrentData(currentId, currentTime)
+        if (!timer.isStarted()) {
+            setCurrentData(currentId, currentTime)
+        }
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)

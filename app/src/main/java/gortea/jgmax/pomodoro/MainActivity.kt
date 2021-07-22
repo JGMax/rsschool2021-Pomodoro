@@ -35,10 +35,6 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner,
 
     private val presenter = Presenter
 
-    init {
-        Log.e("presenterActivity", presenter.toString())
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

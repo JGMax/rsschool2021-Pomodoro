@@ -29,10 +29,6 @@ class TimerService : Service(), TimerStateObserver, NotificationSender {
     private var currentTime: Long = 0L
     private val currentId: Int = presenter.getId()
 
-    init {
-        Log.e("presenter", presenter.toString())
-    }
-
     override fun onCreate() {
         super.onCreate()
         notificationManager =

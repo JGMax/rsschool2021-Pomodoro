@@ -34,7 +34,7 @@ fun createChannel(context: Context, manager: NotificationManager?, soundUri: Uri
 
 fun getPendingIntent(context: Context): PendingIntent {
     val intent = Intent(context, MainActivity::class.java)
-    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
     return PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_ONE_SHOT)
 }
 
@@ -65,4 +65,8 @@ fun getNotificationBuilder(context: Context) =
 
 fun showToast(@StringRes stringId: Int, context: Context) {
     Toast.makeText(context, stringId, Toast.LENGTH_SHORT).show()
+}
+
+fun showToast(message: String, context: Context) {
+    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
 }

@@ -1,19 +1,13 @@
 package gortea.jgmax.pomodoro
 
-import android.app.Notification
 import android.app.NotificationManager
 import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.os.Bundle
-import android.util.Log
 import android.util.TypedValue
-import android.widget.Toast
-import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.*
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import gortea.jgmax.pomodoro.adapters.TimerListAdapter
 import gortea.jgmax.pomodoro.constants.*
@@ -22,31 +16,24 @@ import gortea.jgmax.pomodoro.decorators.HorizontalDividers
 import gortea.jgmax.pomodoro.decorators.VerticalDividers
 import gortea.jgmax.pomodoro.models.TimerModel
 import gortea.jgmax.pomodoro.preferences.AppPreferences
-import gortea.jgmax.pomodoro.receivers.Receiver
+import gortea.jgmax.pomodoro.presenters.NotificationSender
+import gortea.jgmax.pomodoro.presenters.Presenter
 import gortea.jgmax.pomodoro.services.TimerService
 import gortea.jgmax.pomodoro.utils.*
 
 class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner,
-    TimerListAdapter.TimerEventsListener {
+    NotificationSender {
 
     private val binding: ActivityMainBinding by lazy {
         ActivityMainBinding.inflate(layoutInflater)
     }
 
-    private val receiver = Receiver { _, data ->
-        if (data == null) return@Receiver
-        val currentId = data.extras?.getInt(CURRENT_ID_KEY) ?: return@Receiver
-        val currentTime = data.extras?.getLong(CURRENT_TIME_KEY) ?: return@Receiver
-
-        val adapter = binding.timerList.adapter as? TimerListAdapter ?: return@Receiver
-        if (adapter.getCurrentTime() ?: 0L > currentTime) {
-            adapter.updateTime(currentId, currentTime)
-        }
-    }
+    private val presenter = Presenter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         lifecycle.addObserver(this)
+        presenter.detachAll(TimerListAdapter.ItemViewHolder::class)
         with(binding) {
             setContentView(root)
             addBtn.setOnClickListener { onAddClick() }
@@ -55,17 +42,18 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner,
     }
 
     private fun onAddClick() {
-        val adapter = binding.timerList.adapter as? TimerListAdapter ?: return
         val listener = TimePickerDialog.OnTimeSetListener { _, hourOfDay, minute ->
-            val startTimeSeconds = minute * 60L + hourOfDay * 3600L
-            if (startTimeSeconds == 0L) {
-                showToast(R.string.empty_timer_alert, this)
-            } else {
-                adapter.add(TimerModel(startTimeSeconds))
-            }
+            val timeSeconds = minute * 60L + hourOfDay * 3600L
+            presenter.addTimer(timeSeconds, binding.timerList.adapter)
         }
 
-        val dialog = TimePickerDialog(this, listener, 0, 5, true)
+        val dialog = TimePickerDialog(
+            this,
+            listener,
+            DEFAULT_HOUR,
+            DEFAULT_MINUTE,
+            true
+        )
         val buttonColorValue = TypedValue()
         theme.resolveAttribute(R.attr.colorSecondary, buttonColorValue, true)
 
@@ -81,10 +69,7 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner,
         binding.timerList.apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             val data = restoreTimersList() ?: arrayListOf()
-            adapter = TimerListAdapter(
-                data,
-                timerEventsListener = this@MainActivity
-            )
+            adapter = TimerListAdapter(data)
             addItemDecoration(
                 HorizontalDividers(
                     ITEM_HORIZONTAL_DIVIDER_DP.toPx(context)
@@ -103,42 +88,29 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner,
         return appPreferences.getList(TIMERS_LIST_KEY)
     }
 
-    private fun saveTimersList(adapter: TimerListAdapter) {
+    private fun saveTimersList(list: List<TimerModel>) {
         val appPreferences = AppPreferences(this)
-        appPreferences.putList(TIMERS_LIST_KEY, adapter.getDataList())
-    }
-
-
-    @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
-    private fun registerLocalReceiver() {
-        LocalBroadcastManager
-            .getInstance(this)
-            .registerReceiver(receiver, IntentFilter(RESULT_INTENT_FILTER))
-    }
-
-
-    @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
-    private fun unregisterLocalReceiver() {
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(receiver)
+        appPreferences.putList(TIMERS_LIST_KEY, list)
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
     private fun onBackgroundActivity() {
-        val adapter = binding.timerList.adapter as? TimerListAdapter ?: return
-        saveTimersList(adapter)
+        presenter.detachNotificationSender(this)
 
-        val id = adapter.getCurrentId() ?: return
-        val time = adapter.getCurrentTime() ?: return
+        val adapter = binding.timerList.adapter as? TimerListAdapter ?: return
+        saveTimersList(adapter.getDataList())
+
+        if (!presenter.isActive()) return
 
         val intent = Intent(this, TimerService::class.java)
         intent.putExtra(COMMAND_ID, COMMAND_START)
-        intent.putExtra(CURRENT_TIME_KEY, time)
-        intent.putExtra(CURRENT_ID_KEY, id)
         startService(intent)
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
     fun onForegroundActivity() {
+        presenter.attachNotificationSender(this)
+
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
         manager?.cancelAll()
 
@@ -147,9 +119,15 @@ class MainActivity : AppCompatActivity(), LifecycleObserver, LifecycleOwner,
         startService(intent)
     }
 
-    override fun onStop(item: TimerModel, currentTime: Long) {
-        if (currentTime == 0L) {
-            showToast(R.string.timer_ended_notification, this)
+    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+    fun clearTrash() {
+        presenter.detachAll(Any::class)
+    }
+
+    override fun <T> notifyUser(message: T) {
+        when (message) {
+            is String -> showToast(message, this)
+            is Int -> showToast(message, this)
         }
     }
 

@@ -1,29 +1,36 @@
 package gortea.jgmax.pomodoro.timer
 
 import android.os.SystemClock.uptimeMillis
+import android.util.Log
 import androidx.annotation.CallSuper
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import kotlin.reflect.KClass
 
 open class Timer(
-    private val currentTime: Long,
+    var id: Int,
+    currentTime: Long,
     private val scope: CoroutineScope?,
     private val INTERVAL: Long = 1000L
-) {
-    var listener: TimeChangeListener? = null
-    private var isRunning = true
+) : TimerObservable {
+    override val observers: MutableList<TimerStateObserver> = mutableListOf()
+
+    private var isRunning = false
+    private var currentJob: Job? = null
+
     private var startTime = currentTime
     private var startSystemTime = 0L
     private var currentTimerTime = startTime
 
+    fun detachAll(type: KClass<*>) {
+        observers.removeAll { it::class == type }
+    }
+
     fun start() {
-        listener?.onStart(currentTime)
+        sendNewCallback(TimerState.Started(currentTimerTime))
 
         isRunning = true
 
-        scope?.launch(Dispatchers.Default) {
+        currentJob = scope?.launch(Dispatchers.Default) {
             run()
             if (isRunning) {
                 scope.launch(Dispatchers.Main) {
@@ -34,7 +41,7 @@ open class Timer(
     }
 
     private suspend fun run() {
-        setCurrentTime(currentTime)
+        setCurrentTime(currentTimerTime)
         currentTimerTime = startTime
         while (currentTimerTime > 0 && isRunning) {
             delay(INTERVAL / 2)
@@ -53,25 +60,30 @@ open class Timer(
         startTime = currentTime
         startSystemTime = uptimeMillis()
         currentTimerTime = currentTime
-        if (currentTime == 0L) {
+        if (currentTime == 0L && isRunning) {
+            stop()
+        }
+    }
+
+    fun isStarted() = isRunning
+
+    override fun detachObserver(observer: TimerStateObserver) {
+        super.detachObserver(observer)
+        if (observers.isEmpty()) {
             stop()
         }
     }
 
     @CallSuper
     protected open fun updateCurrentTime(currentTime: Long) {
-        listener?.onTimeChanged(currentTime)
+        sendNewCallback(TimerState.Changed(currentTime))
     }
 
     @CallSuper
     open fun stop() {
         isRunning = false
-        listener?.onStop(currentTimerTime)
-    }
-
-    interface TimeChangeListener {
-        fun onStart(currentTime: Long)
-        fun onTimeChanged(currentTime: Long)
-        fun onStop(currentTime: Long)
+        currentJob?.cancel()
+        Log.e("Timer", "stopped")
+        sendNewCallback(TimerState.Stopped(currentTimerTime))
     }
 }
